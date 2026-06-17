@@ -27,7 +27,7 @@ export default CommonHeader;
 const styles = StyleSheet.create({
   HeaderView: {
     width: "100%",
-    paddingVertical: 20,
+    paddingVertical: 15,
     paddingHorizontal: 20,
     flexDirection: "row",
     justifyContent: "space-between",

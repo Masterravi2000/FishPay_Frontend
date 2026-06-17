@@ -7,6 +7,7 @@ const CheckoutButton = () => {
   const navigation = useNavigation();
   return (
     <TouchableOpacity
+    activeOpacity={0.8}
     onPress={()=>navigation.navigate("Payment" as never)}
       style={{
         width: "100%",
@@ -14,7 +15,7 @@ const CheckoutButton = () => {
         paddingVertical: 14,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "green",
+        backgroundColor: "#252525",
       }}
     >
       <TextScallingFalse

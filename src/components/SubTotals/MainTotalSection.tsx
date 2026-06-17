@@ -19,12 +19,12 @@ const MainTotalSection = () => {
       </View>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <TextScallingFalse
-          style={{ fontSize: 13, fontWeight: "500", color: "#cecece" }}
+          style={{ fontSize: 12, fontWeight: "500", color: "#cecece" }}
         >
           Order and get 34 points
         </TextScallingFalse>
         <TextScallingFalse
-          style={{ fontSize: 13, fontWeight: "500", color: "#cecece" }}
+          style={{ fontSize: 12, fontWeight: "500", color: "#cecece" }}
         >
           Free shipping
         </TextScallingFalse>
