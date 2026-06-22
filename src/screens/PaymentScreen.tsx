@@ -1,4 +1,4 @@
-import { StyleSheet, View, TextInput, TouchableOpacity } from "react-native";
+import { StyleSheet, View, TouchableOpacity } from "react-native";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TextScallingFalse from "../components/CentralText/TextScalingFalse";
@@ -12,10 +12,6 @@ import UnTickBlackCircleIcon from "../components/svgIcons/TickMarkIcons/UnTickBl
 import SecureTickIcon from "../components/svgIcons/TickMarkIcons/SecureTickIcon";
 import AddPaymentButton from "../components/BottomButtons/AddPaymentButton";
 import MasterCard from "../components/CreditCards/MasterCard";
-import UserIcon from "../components/svgIcons/CreditCards/UserIcon";
-import CardIcon from "../components/svgIcons/CreditCards/CardIcon";
-import CalendarIcon from "../components/svgIcons/CreditCards/CalendarIcon";
-import InfoIcon from "../components/svgIcons/CreditCards/InfoIcon";
 import AddCardSection from "../components/CreditCards/AddCardSection";
 
 const PaymentScreen = () => {
