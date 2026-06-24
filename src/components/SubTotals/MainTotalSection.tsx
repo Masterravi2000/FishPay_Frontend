@@ -2,7 +2,7 @@ import { StyleSheet, View } from "react-native";
 import React from "react";
 import TextScallingFalse from "../CentralText/TextScalingFalse";
 
-const MainTotalSection = () => {
+const MainTotalSection = ({ totalPrice }: { totalPrice: number }) => {
   return (
     <View style={{ width: "100%", paddingVertical: 15, paddingHorizontal: 5 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -14,7 +14,7 @@ const MainTotalSection = () => {
         <TextScallingFalse
           style={{ fontSize: 19, fontWeight: "500", color: "#252525" }}
         >
-          ₹1321 INR
+          ₹{totalPrice} INR
         </TextScallingFalse>
       </View>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>

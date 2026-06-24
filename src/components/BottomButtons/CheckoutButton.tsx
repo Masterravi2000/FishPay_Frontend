@@ -1,14 +1,12 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
 import React from "react";
 import TextScallingFalse from "../CentralText/TextScalingFalse";
 
-const CheckoutButton = () => {
-  const navigation = useNavigation();
+const CheckoutButton = ({handlePayment}:{handlePayment: () => void}) => {
   return (
     <TouchableOpacity
     activeOpacity={0.8}
-    onPress={()=>navigation.navigate("Payment" as never)}
+    onPress={handlePayment}
       style={{
         width: "100%",
         borderRadius: 200,

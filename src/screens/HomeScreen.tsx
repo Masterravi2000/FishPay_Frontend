@@ -1,4 +1,4 @@
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Vibration, ActivityIndicator } from "react-native";
 import { useDispatch } from "react-redux";
 import { createOrder } from "../features/payment/paymentThunk";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,18 +10,13 @@ import CouponCodeEnter from "../components/Coupons/CouponCodeEnter";
 import MainTotalSection from "../components/SubTotals/MainTotalSection";
 import CheckoutButton from "../components/BottomButtons/CheckoutButton";
 import CommonHeader from "../components/Header/CommonHeader";
+import { useState} from "react";
+import { useNavigation } from "@react-navigation/native";
 
 export default function HomeScreen() {
+  const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
-
-  const handlePayment = () => {
-    dispatch(
-      createOrder({
-        amount: 500,
-        currency: "INR",
-      }) as any,
-    );
-  };
 
   const CartProductListDetails = [
     {
@@ -50,7 +45,49 @@ export default function HomeScreen() {
     },
   ];
 
-  const CartProductList = CartProductListDetails.map((item, i) => {
+  const [cartItems, setCartItems] = useState(CartProductListDetails);
+  const totalPrice = cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+
+  const updateQuantity = (id: number, action: "add" | "remove") => {
+    Vibration.vibrate([0, 100]);
+    setCartItems((items) =>
+      items.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              quantity:
+                action === "add"
+                  ? item.quantity + 1
+                  : Math.max(1, item.quantity - 1),
+            }
+          : item,
+      ),
+    );
+  };
+
+  const handlePayment = async () => {
+    setLoading(true);
+
+    const result = await dispatch(
+      createOrder({
+        amount: totalPrice,
+        currency: "INR",
+      }) as any,
+    );
+
+    setLoading(false);
+
+    if (createOrder.fulfilled.match(result)) {
+      navigation.navigate("Payment" as never);
+    } else {
+      console.error("Create Order Failed:", result);
+    }
+  };
+
+  const CartProductList = cartItems.map((item, i) => {
     return (
       <CheckoutProductCard
         key={i}
@@ -59,6 +96,8 @@ export default function HomeScreen() {
         price={item.price}
         pcs={item.pcs}
         quantity={item.quantity}
+        onAdd={() => updateQuantity(item.id, "add")}
+        onRemove={() => updateQuantity(item.id, "remove")}
       />
     );
   });
@@ -67,8 +106,7 @@ export default function HomeScreen() {
     <SafeAreaView>
       <View style={styles.MainPageView}>
         {/* header */}
-        <CommonHeader
-        title="Shopping cart"/>
+        <CommonHeader title="Shopping cart" />
 
         {/* Checkout Products Lists */}
         <View style={styles.checkoutProductListView}>{CartProductList}</View>
@@ -76,8 +114,14 @@ export default function HomeScreen() {
         {/* Buttom DashBoard */}
         <View style={styles.BottomDashboardView}>
           <CouponCodeEnter />
-          <MainTotalSection />
-          <CheckoutButton />
+          <MainTotalSection totalPrice={totalPrice} />
+          {loading ? (
+            <View style={{ paddingVertical: 15 }}>
+              <ActivityIndicator color={"black"} size="small" />
+            </View>
+          ) : (
+            <CheckoutButton handlePayment={handlePayment} />
+          )}
         </View>
       </View>
     </SafeAreaView>

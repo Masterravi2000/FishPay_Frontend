@@ -1,4 +1,10 @@
-import { StyleSheet, Image, View, TouchableOpacity, ImageSourcePropType } from "react-native";
+import {
+  StyleSheet,
+  Image,
+  View,
+  TouchableOpacity,
+  ImageSourcePropType,
+} from "react-native";
 import React from "react";
 import TextScallingFalse from "../CentralText/TextScalingFalse";
 import CrossIcon from "../svgIcons/CrossIcon";
@@ -9,6 +15,8 @@ interface CheckoutProductCardProps {
   price: number;
   pcs: string;
   quantity: number;
+  onAdd: () => void;
+  onRemove: () => void;
 }
 
 const CheckoutProductCard = ({
@@ -17,6 +25,8 @@ const CheckoutProductCard = ({
   price,
   pcs,
   quantity,
+  onAdd,
+  onRemove,
 }: CheckoutProductCardProps) => {
   return (
     <View style={styles.mainView}>
@@ -40,13 +50,13 @@ const CheckoutProductCard = ({
             ₹{price} INR
           </TextScallingFalse>
           <View style={styles.quantButton}>
-            <TouchableOpacity style={styles.removeButton}>
+            <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
               <TextScallingFalse style={styles.removeText}>-</TextScallingFalse>
             </TouchableOpacity>
             <TextScallingFalse style={styles.quantityText}>
               {quantity}
             </TextScallingFalse>
-            <TouchableOpacity style={styles.addButton}>
+            <TouchableOpacity onPress={onAdd} style={styles.addButton}>
               <TextScallingFalse style={styles.addText}>+</TextScallingFalse>
             </TouchableOpacity>
           </View>
