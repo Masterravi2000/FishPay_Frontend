@@ -4,7 +4,8 @@ export interface CreateOrderRequest {
 }
 
 export interface CreateOrderResponse {
-  orderId: string;
+  id: string;
   amount: number;
   currency: string;
+  status: string;
 }

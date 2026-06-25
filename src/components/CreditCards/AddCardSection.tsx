@@ -18,7 +18,7 @@ const AddCardSection = () => {
               Cardholder Number
             </TextScallingFalse>
             <View style={styles.cardHolderNameInputView}>
-              <TextInput style={styles.cardHolderNameInputSection} />
+              <TextInput placeholder="Card Number" placeholderTextColor={'#c9c9c9'} style={styles.cardHolderNameInputSection} />
               <View style={styles.cardIconView}>
                 <CardIcon />
               </View>
@@ -30,7 +30,7 @@ const AddCardSection = () => {
                 Expiry Date
               </TextScallingFalse>
               <View style={styles.expiryInputSection}>
-                <TextInput style={styles.expiryInputComponent} />
+                <TextInput placeholder="MM/YY" placeholderTextColor={'#c9c9c9'} style={styles.expiryInputComponent} />
                 <View style={styles.calendarIconView}>
                   <CalendarIcon />
                 </View>
@@ -41,7 +41,7 @@ const AddCardSection = () => {
                 Security Code
               </TextScallingFalse>
               <View style={styles.securityInputSection}>
-                <TextInput style={styles.securityInputComponent} />
+                <TextInput  placeholder="CVV" placeholderTextColor={'#c9c9c9'} style={styles.securityInputComponent} />
                 <View style={styles.infoIconView}>
                   <InfoIcon />
                 </View>

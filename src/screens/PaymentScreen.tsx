@@ -1,4 +1,4 @@
-import { StyleSheet, View, TouchableOpacity } from "react-native";
+import { StyleSheet, View, TouchableOpacity, Vibration } from "react-native";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TextScallingFalse from "../components/CentralText/TextScalingFalse";
@@ -13,9 +13,13 @@ import SecureTickIcon from "../components/svgIcons/TickMarkIcons/SecureTickIcon"
 import AddPaymentButton from "../components/BottomButtons/AddPaymentButton";
 import MasterCard from "../components/CreditCards/MasterCard";
 import AddCardSection from "../components/CreditCards/AddCardSection";
+import { useSelector } from "react-redux";
+import { RootState } from "../app/store";
+import RazorpayCheckout from "react-native-razorpay";
 
 const PaymentScreen = () => {
   const [selectedId, setSelectedId] = useState<number | null>(1);
+  const { orderId, amount } = useSelector((state: RootState) => state.payment);
   const paymentOptionsDetails = [
     {
       id: 1,
@@ -38,6 +42,7 @@ const PaymentScreen = () => {
   ];
 
   const select = (id: number) => {
+    Vibration.vibrate([0, 50]);
     setSelectedId(id);
   };
 
@@ -71,6 +76,25 @@ const PaymentScreen = () => {
     );
   });
 
+  const EXPO_RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
+
+  const handlePayNow = async () => {
+    const options = {
+      key: EXPO_RAZORPAY_KEY_ID,
+      amount: (amount ?? 0) * 100,
+      currency: "INR",
+      name: "FishPay",
+      description: "Test Transaction",
+      order_id: orderId,
+    };
+    try {
+      const data = await RazorpayCheckout.open(options);
+      console.log("Payment Success:", data);
+    } catch (error) {
+      console.log("Payment Failed:", error);
+    }
+  };
+
   return (
     <SafeAreaView>
       <View style={styles.paymentPageView}>
@@ -96,11 +120,7 @@ const PaymentScreen = () => {
 
         {/* Card section */}
         <View style={styles.cardContainer}>
-          {selectedId === 1 ? (
-            <MasterCard />
-          ) : (
-            <AddCardSection />
-          )}
+          {selectedId === 1 ? <MasterCard /> : <AddCardSection />}
         </View>
 
         {/* Bottom Dashboard */}
@@ -115,7 +135,7 @@ const PaymentScreen = () => {
                   Merchant
                 </TextScallingFalse>
                 <TextScallingFalse style={styles.bottomDashboardDetailsText}>
-                  Demo Store
+                  Merchant Store
                 </TextScallingFalse>
               </View>
               <View style={styles.bottomDashboardDetailsView}>
@@ -123,7 +143,7 @@ const PaymentScreen = () => {
                   Order ID
                 </TextScallingFalse>
                 <TextScallingFalse style={styles.bottomDashboardDetailsText}>
-                  FP1234567890
+                  {`${orderId?.slice(0, 3)}##...${orderId?.slice(-10)}`}
                 </TextScallingFalse>
               </View>
               <View style={styles.bottomDashboardDetailsView}>
@@ -131,14 +151,18 @@ const PaymentScreen = () => {
                   Amount
                 </TextScallingFalse>
                 <TextScallingFalse style={styles.priceText}>
-                  ₹1321.00
+                  ₹{amount}.00
                 </TextScallingFalse>
               </View>
             </View>
             {/* Paynow Button */}
             <View>
               <View style={styles.extraView} />
-              <TouchableOpacity style={styles.payNowButton}>
+              <TouchableOpacity
+                onPress={handlePayNow}
+                activeOpacity={0.9}
+                style={styles.payNowButton}
+              >
                 <TextScallingFalse style={styles.payNowButtonText}>
                   Pay Now
                 </TextScallingFalse>
