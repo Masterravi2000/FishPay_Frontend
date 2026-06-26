@@ -86,6 +86,7 @@ const PaymentScreen = () => {
       name: "FishPay",
       description: "Test Transaction",
       order_id: orderId,
+      method: "upi"
     };
     try {
       const data = await RazorpayCheckout.open(options);
@@ -100,7 +101,7 @@ const PaymentScreen = () => {
       <View style={styles.paymentPageView}>
         {/* Header */}
         <CommonHeader
-          title="Payment Methods"
+          title="Payment"
           rightComponent={
             <View style={styles.LogoContainer}>
               <View style={styles.LogoView}>
@@ -110,18 +111,18 @@ const PaymentScreen = () => {
           }
         />
         {/* Payment Options */}
-        <View style={styles.paymentOptionContainer}>
+        {/* <View style={styles.paymentOptionContainer}>
           <View style={styles.paymentOptionWhiteBackground}>
             {paymentOption}
             <View />
             <AddPaymentButton />
           </View>
-        </View>
+        </View> */}
 
         {/* Card section */}
-        <View style={styles.cardContainer}>
+        {/* <View style={styles.cardContainer}>
           {selectedId === 1 ? <MasterCard /> : <AddCardSection />}
-        </View>
+        </View> */}
 
         {/* Bottom Dashboard */}
         <View style={styles.bottomDashboardView}>
