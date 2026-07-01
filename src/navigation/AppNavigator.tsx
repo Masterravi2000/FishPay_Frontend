@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import HomeScreen from "../screens/HomeScreen";
 import PaymentScreen from "../screens/PaymentScreen";
 import ProductScreen from "../screens/ProductScreen";
+import PaymentStatusScreen from "../screens/PaymentStatusScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +21,7 @@ export default function AppNavigator() {
           options={{ title: "FishPay" }}
         />
         <Stack.Screen name="Payment" component={PaymentScreen} />
+        <Stack.Screen name="PaymentStatus" component={PaymentStatusScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

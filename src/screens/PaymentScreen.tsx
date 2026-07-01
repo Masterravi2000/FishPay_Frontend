@@ -1,4 +1,10 @@
-import { StyleSheet, View, TouchableOpacity, Vibration } from "react-native";
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  Vibration,
+  Image,
+} from "react-native";
 import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TextScallingFalse from "../components/CentralText/TextScalingFalse";
@@ -16,8 +22,21 @@ import AddCardSection from "../components/CreditCards/AddCardSection";
 import { useSelector } from "react-redux";
 import { RootState } from "../app/store";
 import RazorpayCheckout from "react-native-razorpay";
+import MapImg from "../../assets/Extra_Images/MapImg.jpeg";
+import LottieView from "lottie-react-native";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+type RootStackParamList = {
+  Product: undefined;
+  Home: undefined;
+  Payment: undefined;
+  PaymentStatus: { paymentData: any };
+};
 
 const PaymentScreen = () => {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [selectedId, setSelectedId] = useState<number | null>(1);
   const { orderId, amount } = useSelector((state: RootState) => state.payment);
   const paymentOptionsDetails = [
@@ -86,11 +105,14 @@ const PaymentScreen = () => {
       name: "FishPay",
       description: "Test Transaction",
       order_id: orderId,
-      method: "upi"
+      method: "upi",
     };
     try {
       const data = await RazorpayCheckout.open(options);
       console.log("Payment Success:", data);
+      navigation.navigate("PaymentStatus", {
+        paymentData: data,
+      });
     } catch (error) {
       console.log("Payment Failed:", error);
     }
@@ -123,6 +145,78 @@ const PaymentScreen = () => {
         {/* <View style={styles.cardContainer}>
           {selectedId === 1 ? <MasterCard /> : <AddCardSection />}
         </View> */}
+
+        <View
+          style={{
+            width: "100%",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <LottieView
+            source={require("../../assets/animations/Wallet.json")}
+            autoPlay
+            loop
+            style={{ width: 200, height: 200 }}
+          />
+          <View style={{ justifyContent: "center", alignItems: "center" }}>
+            <TextScallingFalse
+              style={{ color: "#303030", fontSize: 25, fontWeight: "500" }}
+            >
+              Order Status
+            </TextScallingFalse>
+            <TextScallingFalse
+              style={{ color: "#707070", fontSize: 15, fontWeight: "500" }}
+            >
+              Waiting for your payment
+            </TextScallingFalse>
+          </View>
+        </View>
+
+        <View
+          style={{
+            width: "100%",
+            paddingHorizontal: 15,
+            paddingVertical: 15,
+            position: "absolute",
+            bottom: "37%",
+            zIndex: 100,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "white",
+              borderRadius: 20,
+              padding: 10,
+              flexDirection: "row",
+              gap: 15,
+              alignItems: "center",
+            }}
+          >
+            <Image
+              style={{ width: 65, height: 65, borderRadius: 15 }}
+              source={MapImg}
+            />
+            <View style={{ gap: 2 }}>
+              <TextScallingFalse
+                style={{ color: "#303030", fontSize: 18, fontWeight: "500" }}
+              >
+                Home
+              </TextScallingFalse>
+              <TextScallingFalse
+                style={{
+                  color: "#bbbbbb",
+                  fontSize: 10,
+                  fontWeight: "500",
+                  width: 200,
+                }}
+              >
+                47/1 Dr. C.P Aunukami Road North Costal Region Vizak 700023
+              </TextScallingFalse>
+            </View>
+          </View>
+        </View>
 
         {/* Bottom Dashboard */}
         <View style={styles.bottomDashboardView}>
@@ -157,7 +251,7 @@ const PaymentScreen = () => {
               </View>
             </View>
             {/* Paynow Button */}
-            <View>
+            <View style={{ paddingVertical: 20 }}>
               <View style={styles.extraView} />
               <TouchableOpacity
                 onPress={handlePayNow}
@@ -294,7 +388,7 @@ const styles = StyleSheet.create({
   },
   payNowButton: {
     backgroundColor: "#252525",
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderRadius: 200,
     justifyContent: "center",
     alignItems: "center",
