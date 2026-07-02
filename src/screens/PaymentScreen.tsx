@@ -26,6 +26,8 @@ import MapImg from "../../assets/Extra_Images/MapImg.jpeg";
 import LottieView from "lottie-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useDispatch } from "react-redux";
+import { verifySignature } from "../features/checkout/thunk/verifySignaturePayload";
 
 type RootStackParamList = {
   Product: undefined;
@@ -39,6 +41,9 @@ const PaymentScreen = () => {
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [selectedId, setSelectedId] = useState<number | null>(1);
   const { orderId, amount } = useSelector((state: RootState) => state.payment);
+  const checkoutData = useSelector((state: RootState) => state.checkout);
+  const dispatch = useDispatch();
+
   const paymentOptionsDetails = [
     {
       id: 1,
@@ -109,6 +114,19 @@ const PaymentScreen = () => {
     };
     try {
       const data = await RazorpayCheckout.open(options);
+      //now prepare payload for verify-signature endpoint
+      const verifySignaturePayload = {
+        razorpayPaymentId: data.razorpay_payment_id,
+        razorpayOrderId: data.razorpay_order_id,
+        razorpaySignature: data.razorpay_signature,
+        userId: checkoutData.userId ?? 1,
+        amount: checkoutData.amount,
+        paymentMethod: "",
+        products: checkoutData.products,
+        deliveryCharges: checkoutData.deliveryCharges,
+        totalAmount: checkoutData.totalAmount
+      }
+      dispatch(verifySignature(verifySignaturePayload) as any);
       console.log("Payment Success:", data);
       navigation.navigate("PaymentStatus", {
         paymentData: data,

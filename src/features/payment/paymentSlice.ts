@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { createOrder } from "./paymentThunk";
+import { verifySignature } from "../checkout/thunk/verifySignaturePayload";
 
 interface PaymentState {
   loading: boolean;
@@ -8,6 +9,7 @@ interface PaymentState {
   currency: string | null;
   status: string | null;
   error: string | null;
+  verifyResponse: any | null;
 }
 
 const initialState: PaymentState = {
@@ -17,6 +19,7 @@ const initialState: PaymentState = {
   currency: null,
   status: null,
   error: null,
+  verifyResponse: null
 };
 
 const paymentSlice = createSlice({
@@ -29,7 +32,6 @@ const paymentSlice = createSlice({
       .addCase(createOrder.pending, (state) => {
         state.loading = true;
       })
-
       .addCase(createOrder.fulfilled, (state, action) => {
         state.loading = false;
         state.orderId = action.payload.id;
@@ -37,10 +39,21 @@ const paymentSlice = createSlice({
         state.currency = action.payload.currency;
         state.status = action.payload.status;
       })
-
       .addCase(createOrder.rejected, (state) => {
         state.loading = false;
         state.error = "Order creation failed";
+      })
+
+      .addCase(verifySignature.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(verifySignature.fulfilled, (state, action) => {
+        state.loading = false;
+        state.verifyResponse = action.payload;
+      })
+      .addCase(verifySignature.rejected, (state) => {
+        state.loading = false;
+        state.error = "Signature verification failed"
       });
   },
 });

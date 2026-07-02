@@ -10,8 +10,9 @@ import CouponCodeEnter from "../components/Coupons/CouponCodeEnter";
 import MainTotalSection from "../components/SubTotals/MainTotalSection";
 import CheckoutButton from "../components/BottomButtons/CheckoutButton";
 import CommonHeader from "../components/Header/CommonHeader";
-import { useState} from "react";
+import { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
+import { saveCheckoutData } from "../features/checkout/slice/checkoutSlice";
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -68,9 +69,22 @@ export default function HomeScreen() {
     );
   };
 
+  const checkoutData = {
+    userId: 1,
+    amount: totalPrice,
+    deliveryCharges: 0,
+    totalAmount: totalPrice + 0,
+    products: cartItems.map((item) => ({
+      productId: item.id.toString(),
+      productName: item.title,
+      quantity: item.quantity,
+      price: item.price,
+    })),
+  };
+
   const handlePayment = async () => {
     setLoading(true);
-
+    dispatch(saveCheckoutData(checkoutData));
     const result = await dispatch(
       createOrder({
         amount: totalPrice,

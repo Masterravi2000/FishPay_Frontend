@@ -1,9 +1,11 @@
 import { configureStore } from "@reduxjs/toolkit";
 import paymentReducer from "../features/payment/paymentSlice";
+import checkoutReducer from "../features/checkout/slice/checkoutSlice";
 
 export const store = configureStore({
   reducer: {
     payment: paymentReducer,
+    checkout : checkoutReducer
   },
 });
 
