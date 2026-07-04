@@ -127,7 +127,6 @@ const PaymentScreen = () => {
         totalAmount: checkoutData.totalAmount
       }
       dispatch(verifySignature(verifySignaturePayload) as any);
-      console.log("Payment Success:", data);
       navigation.navigate("PaymentStatus", {
         paymentData: data,
       });
@@ -282,7 +281,7 @@ const PaymentScreen = () => {
               </TouchableOpacity>
               {/* Bottom mark */}
               <View style={styles.bottomMarkContainer}>
-                <SecureTickIcon />
+                <SecureTickIcon color={"#f7805c"} />
                 <TextScallingFalse style={styles.bottomMarkText}>
                   Powered by FishPay
                 </TextScallingFalse>

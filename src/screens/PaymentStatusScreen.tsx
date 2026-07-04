@@ -1,123 +1,143 @@
-import { StyleSheet, ActivityIndicator, View, Animated } from "react-native";
+import {
+  StyleSheet,
+  ActivityIndicator,
+  View,
+  Animated,
+  TouchableOpacity,
+} from "react-native";
 import React, { useEffect, useRef } from "react";
 import TextScallingFalse from "../components/CentralText/TextScalingFalse";
 import { useSelector } from "react-redux";
 import { RootState } from "../app/store";
 import LottieView from "lottie-react-native";
+import { Audio } from "expo-av";
+import SecureTickIcon from "../components/svgIcons/TickMarkIcons/SecureTickIcon";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+type RootStackParamList = {
+  PaymentStatus: undefined;
+  OrderTrack: undefined;
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const PaymentStatusScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
   const { loading, verifyResponse } = useSelector(
     (state: RootState) => state.payment,
   );
   const scaleAnim = useRef(new Animated.Value(1)).current;
-  const translateYAnim = useRef(new Animated.Value(0)).current;
-  const textTranslateY = useRef(new Animated.Value(0)).current;
-  const invoiceTranslateY = useRef(new Animated.Value(-300)).current;
+  const translateYAnim = useRef(new Animated.Value(20)).current;
+  const textTranslateY = useRef(new Animated.Value(20)).current;
+  const invoiceOpacity = useRef(new Animated.Value(0)).current;
+  const invoiceTranslateY = useRef(new Animated.Value(20)).current;
+  const successSound = useRef<Audio.Sound | null>(null);
+  const invoiceSound = useRef<Audio.Sound | null>(null);
   const isSucess = verifyResponse?.paymentStatus === "SUCCESS";
 
   useEffect(() => {
-    if (!isSucess) return;
-    console.log(verifyResponse)
-    scaleAnim.setValue(1);
-    translateYAnim.setValue(0);
-    textTranslateY.setValue(0);
-    const timer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 0.6,
-          duration: 600,
-          useNativeDriver: true,
-        }),
+    const loadSounds = async () => {
+      const { sound: success } = await Audio.Sound.createAsync(
+        require("../../assets/sounds/sucess.wav"),
+      );
 
-        Animated.timing(translateYAnim, {
-          toValue: -330,
-          duration: 600,
-          useNativeDriver: true,
-        }),
+      const { sound: invoice } = await Audio.Sound.createAsync(
+        require("../../assets/sounds/invoice.wav"),
+      );
 
-        Animated.timing(textTranslateY, {
-          toValue: -230,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 1200); // Wait for the Lottie animation to finish
-    return () => clearTimeout(timer);
-  }, [isSucess]);
+      successSound.current = success;
+      invoiceSound.current = invoice;
+    };
+
+    loadSounds();
+
+    return () => {
+      successSound.current?.unloadAsync();
+      invoiceSound.current?.unloadAsync();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isSucess) return;
-    const timer = setTimeout(() => {
-      Animated.sequence([
-        Animated.timing(invoiceTranslateY, {
-          toValue: -200,
-          duration: 250,
+
+    scaleAnim.setValue(1);
+    translateYAnim.setValue(100);
+    textTranslateY.setValue(100);
+    invoiceOpacity.setValue(0);
+    invoiceTranslateY.setValue(20);
+
+    const timer = setTimeout(async () => {
+      await successSound.current?.replayAsync();
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0.7,
+          duration: 600,
           useNativeDriver: true,
         }),
-
-        Animated.delay(150),
-
-        Animated.timing(invoiceTranslateY, {
-          toValue: -100,
-          duration: 250,
+        Animated.timing(translateYAnim, {
+          toValue: -70,
+          duration: 600,
           useNativeDriver: true,
         }),
-
-        Animated.delay(150),
-
-        Animated.timing(invoiceTranslateY, {
-          toValue: 0,
-          duration: 400,
+        Animated.timing(textTranslateY, {
+          toValue: -80,
+          duration: 600,
           useNativeDriver: true,
         }),
-      ]).start();
-    }, 2000);
+      ]).start(async () => {
+        await invoiceSound.current?.replayAsync();
+        Animated.parallel([
+          Animated.timing(invoiceOpacity, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(invoiceTranslateY, {
+            toValue: -50,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    }, 1200);
+
     return () => clearTimeout(timer);
   }, [isSucess]);
 
   const products = () => {
     return verifyResponse?.products.map((product: any) => {
       return (
-        <TextScallingFalse
-          key={product.productId}
-          style={styles.invoiceDetailsText}
-        >
-          {product?.productName} {product?.quantity}
-        </TextScallingFalse>
+        <View key={product.productId} style={{ flexDirection: "row" }}>
+          <TextScallingFalse style={styles.invoiceDetailsText}>
+            {product?.productName} {product?.quantity}
+          </TextScallingFalse>
+          <TextScallingFalse style={styles.invoiceDetailsTextAnswers}>
+            : ₹{product.price * product.quantity}.00
+          </TextScallingFalse>
+        </View>
       );
     });
   };
-  const productPrice = () => {
-    return verifyResponse?.products.map((product: any) => {
-      return (
-        <TextScallingFalse
-          key={product.productId}
-          style={styles.invoiceDetailsTextAnswers}
-        >
-          : {product.price * product.quantity}
-        </TextScallingFalse>
-      );
+
+  const lowerCount = [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+  ];
+  const show = () => {
+    return lowerCount.map((items, key) => {
+      return <View key={key} style={styles.invoiceBottomDots} />;
     });
   };
 
   return (
     <View
-      style={{
-        width: "100%",
-        height: "100%",
-        backgroundColor: isSucess ? "#4ec92f" : "orange",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
+      style={[
+        styles.paymentStatusPageView,
+        { backgroundColor: isSucess ? "#4ec92f" : "orange" },
+      ]}
     >
-      {/* tickmark component */}
-      <View
-        style={{
-          width: "100%",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <View style={styles.bodyComponentsView}>
+        {/* tickmark component */}
         <Animated.View
           style={{
             transform: [{ scale: scaleAnim }, { translateY: translateYAnim }],
@@ -131,154 +151,144 @@ const PaymentStatusScreen = () => {
               style={{ width: 150, height: 150 }}
             />
           ) : (
-            <ActivityIndicator size="large" color="white" />
+            <View style={{ paddingVertical: 50, transform: [{ scale: 2 }] }}>
+              <ActivityIndicator size="large" color="white" />
+            </View>
           )}
         </Animated.View>
+
+        {/* Payment Successfull text component */}
         <Animated.View
           style={{
             transform: [{ translateY: textTranslateY }],
           }}
         >
-          <TextScallingFalse
-            style={{ color: "white", fontSize: 23, fontWeight: "700" }}
-          >
+          <TextScallingFalse style={styles.paymentSucessfullText}>
             {isSucess ? "Payment Successful" : "Loading..."}
           </TextScallingFalse>
         </Animated.View>
 
+        {/* Invoice */}
         <Animated.View
           style={{
-            position: "absolute",
-            top: -20, // adjust as needed
-            left: 0,
-            right: 0,
+            width: "100%",
+            opacity: invoiceOpacity,
             transform: [{ translateY: invoiceTranslateY }],
           }}
         >
-          <View
-            style={{
-              width: "100%",
-              justifyContent: "center",
-              alignItems: "center",
-              paddingHorizontal: 40,
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "white",
-                padding: 15,
-                borderTopLeftRadius: 15,
-                borderTopRightRadius: 15,
-                width: "100%",
-              }}
-            >
-              <View style={{ gap: 12, paddingTop: 7 }}>
-                <TextScallingFalse
-                  style={{ fontSize: 13, fontWeight: "500", color: "#414141" }}
-                >
+          <View style={styles.invoiceComponentView}>
+            <View style={styles.invoiceComponentBackground}>
+              <View style={styles.invoicePaymentDetailsView}>
+                <TextScallingFalse style={styles.invoiceDetailsHeader}>
                   Payment Details
                 </TextScallingFalse>
-                <View style={{ flexDirection: "row" }}>
-                  <View
-                    style={{
-                      gap: 10,
-                      width: "48%",
-                    }}
-                  >
+                <View style={styles.invoicePaymentDetailsComponent}>
+                  <View style={styles.invoiceDetailsQuesAnsView}>
                     <TextScallingFalse style={styles.invoiceDetailsText}>
                       Invoice Number
                     </TextScallingFalse>
-                    <TextScallingFalse style={styles.invoiceDetailsText}>
-                      Order Time
-                    </TextScallingFalse>
-                    <TextScallingFalse style={styles.invoiceDetailsText}>
-                      Payment Method
-                    </TextScallingFalse>
-                    <TextScallingFalse style={styles.invoiceDetailsText}>
-                      Payment Status
-                    </TextScallingFalse>
-                  </View>
-
-                  <View
-                    style={{
-                      gap: 10,
-                      width: "50%",
-                    }}
-                  >
                     <TextScallingFalse style={styles.invoiceDetailsTextAnswers}>
                       : {verifyResponse?.invoiceNumber}
+                    </TextScallingFalse>
+                  </View>
+                  <View style={styles.invoiceDetailsQuesAnsView}>
+                    <TextScallingFalse style={styles.invoiceDetailsText}>
+                      Order Time
                     </TextScallingFalse>
                     <TextScallingFalse style={styles.invoiceDetailsTextAnswers}>
                       : {verifyResponse?.orderTime}
                     </TextScallingFalse>
+                  </View>
+                  <View style={styles.invoiceDetailsQuesAnsView}>
+                    <TextScallingFalse style={styles.invoiceDetailsText}>
+                      Payment Method
+                    </TextScallingFalse>
                     <TextScallingFalse style={styles.invoiceDetailsTextAnswers}>
                       : {verifyResponse?.paymentMethod}
+                    </TextScallingFalse>
+                  </View>
+                  <View style={styles.invoiceDetailsQuesAnsView}>
+                    <TextScallingFalse style={styles.invoiceDetailsText}>
+                      Payment Status
                     </TextScallingFalse>
                     <TextScallingFalse style={styles.invoiceDetailsTextAnswers}>
                       : {verifyResponse?.paymentStatus}
                     </TextScallingFalse>
                   </View>
                 </View>
+              </View>
 
-                <View style={{ gap: 12, paddingTop: 7 }}>
-                  <TextScallingFalse
-                    style={{
-                      fontSize: 13,
-                      fontWeight: "500",
-                      color: "#414141",
-                    }}
-                  >
+              <View style={styles.invoiceCutView}>
+                <View
+                  style={[
+                    styles.invoiceCutsMiddle,
+                    { borderTopRightRadius: 10, borderBottomRightRadius: 10 },
+                  ]}
+                />
+                <View style={styles.invoiceCutsLine} />
+                <View
+                  style={[
+                    styles.invoiceCutsMiddle,
+                    { borderTopLeftRadius: 10, borderBottomLeftRadius: 10 },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.invoiceProductDetails}>
+                <View style={styles.invoiceProductDetailsTextView}>
+                  <TextScallingFalse style={styles.invoiceDetailsHeader}>
                     Product Details
                   </TextScallingFalse>
-                  <View style={{ flexDirection: "row" }}>
-                    <View
-                      style={{
-                        gap: 10,
-                        width: "48%",
-                      }}
-                    >
-                      {products()}
-                      <TextScallingFalse style={styles.invoiceDetailsText}>
-                        Order Time
-                      </TextScallingFalse>
-                      <TextScallingFalse style={styles.invoiceDetailsText}>
-                        Payment Method
-                      </TextScallingFalse>
-                      <TextScallingFalse style={styles.invoiceDetailsText}>
-                        Payment Status
-                      </TextScallingFalse>
-                    </View>
-
-                    <View
-                      style={{
-                        gap: 10,
-                        width: "50%",
-                      }}
-                    >
-                      {productPrice()}
-                      <TextScallingFalse
-                        style={styles.invoiceDetailsTextAnswers}
-                      >
-                        : {verifyResponse?.deliveryCharges}
-                      </TextScallingFalse>
-                      <TextScallingFalse
-                        style={styles.invoiceDetailsTextAnswers}
-                      >
-                        : {verifyResponse?.paymentMethod}
-                      </TextScallingFalse>
-                      <TextScallingFalse
-                        style={styles.invoiceDetailsTextAnswers}
-                      >
-                        : {verifyResponse?.paymentStatus}
-                      </TextScallingFalse>
-                    </View>
+                  {products()}
+                  <View style={styles.invoiceDetailsQuesAnsView}>
+                    <TextScallingFalse style={styles.invoiceDetailsText}>
+                      Delivery Charges
+                    </TextScallingFalse>
+                    <TextScallingFalse style={styles.invoiceDetailsTextAnswers}>
+                      : {verifyResponse?.deliveryCharges}
+                    </TextScallingFalse>
+                  </View>
+                  <View style={styles.invoiceDetailsQuesAnsView}>
+                    <TextScallingFalse style={styles.invoiceDetailsText}>
+                      Total Amount
+                    </TextScallingFalse>
+                    <TextScallingFalse style={styles.invoiceDetailsTextAnswers}>
+                      : ₹{verifyResponse?.totalAmount}.00
+                    </TextScallingFalse>
                   </View>
                 </View>
+                <View style={styles.downloadButtonGap} />
+                <TouchableOpacity style={styles.invoiceDownloadButton}>
+                  <TextScallingFalse style={styles.invoiceDownloadButtonText}>
+                    Download PDF Receipt
+                  </TextScallingFalse>
+                </TouchableOpacity>
               </View>
+              <View style={styles.invoiceBottomView}>{show()}</View>
             </View>
           </View>
         </Animated.View>
       </View>
+
+      <Animated.View
+        style={[styles.bottomBarView, { opacity: invoiceOpacity }]}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.navigate("OrderTrack")}
+          activeOpacity={0.7}
+          style={styles.skipForNowButton}
+        >
+          <TextScallingFalse style={styles.skipForNowText}>
+            Skip for now
+          </TextScallingFalse>
+        </TouchableOpacity>
+        <View style={styles.bottomMarkContainer}>
+          <SecureTickIcon color={"#ececec"} />
+          <TextScallingFalse style={styles.bottomMarkText}>
+            Powered by FishPay
+          </TextScallingFalse>
+        </View>
+      </Animated.View>
     </View>
   );
 };
@@ -290,10 +300,152 @@ const styles = StyleSheet.create({
     color: "#a0a0a0",
     fontSize: 10,
     fontWeight: "600",
+    width: "48%",
   },
   invoiceDetailsTextAnswers: {
     color: "#505050",
     fontSize: 10,
     fontWeight: "500",
+  },
+  paymentStatusPageView: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  bodyComponentsView: {
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  paymentSucessfullText: {
+    color: "white",
+    fontSize: 23,
+    fontWeight: "700",
+  },
+  invoiceComponentView: {
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  invoicePaymentDetailsView: {
+    backgroundColor: "white",
+    padding: 20,
+    paddingTop: 20,
+    width: "100%",
+    borderTopRightRadius: 15,
+    borderTopLeftRadius: 15,
+  },
+  invoiceDetailsHeader: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#414141",
+  },
+  invoicePaymentDetailsComponent: {
+    gap: 12,
+    paddingTop: 10,
+  },
+  invoiceDetailsQuesAnsView: {
+    flexDirection: "row",
+  },
+  invoiceCutView: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "white",
+    alignItems: "center",
+  },
+  invoiceCutsMiddle: {
+    width: 10,
+    height: 17,
+    backgroundColor: "#4ec92f",
+  },
+  invoiceCutsLine: {
+    height: 1,
+    width: "90%",
+    borderStyle: "dashed",
+    backgroundColor: "#ececec",
+  },
+  invoiceProductDetails: {
+    backgroundColor: "white",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    width: "100%",
+  },
+  invoiceProductDetailsTextView: {
+    gap: 12,
+  },
+  downloadButtonGap: {
+    paddingVertical: 12,
+  },
+  invoiceDownloadButton: {
+    padding: 10,
+    borderRadius: 8,
+    width: "100%",
+    backgroundColor: "#c5c5c5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  invoiceDownloadButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#383838",
+  },
+  invoiceBottomDots: {
+    backgroundColor: "#4ec92f",
+    width: 13,
+    height: 7,
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+  },
+  invoiceBottomView: {
+    width: "100%",
+    backgroundColor: "white",
+    flexDirection: "row",
+    gap: 2.8,
+    paddingHorizontal: 3,
+    paddingTop: 7,
+    justifyContent: "center",
+  },
+  invoiceComponentBackground: {
+    width: "100%",
+    backgroundColor: "white",
+    borderTopRightRadius: 15,
+    borderTopLeftRadius: 15,
+    borderBottomColor: "#4ec92f",
+    borderBottomWidth: 1,
+  },
+  bottomMarkContainer: {
+    flexDirection: "row",
+    paddingTop: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+  },
+  bottomMarkText: {
+    color: "#ececec",
+    fontSize: 10,
+    fontWeight: "500",
+  },
+  bottomBarView: {
+    position: "absolute",
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 30,
+    width: "100%",
+  },
+  skipForNowButton: {
+    paddingHorizontal: 40,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: "white",
+    borderRadius: 50,
+  },
+  skipForNowText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "white",
   },
 });
