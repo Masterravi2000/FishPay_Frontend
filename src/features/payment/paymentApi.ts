@@ -20,3 +20,15 @@ export const createOrderApi = async (
     throw error;
   }
 };
+
+export const getInvoiceStatusApi = async (paymentId: string) => {
+  try {
+    const response = await axios.get(
+      `${BASE_URL}/api/v1/invoices/invoice-status/${paymentId}`
+    );
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}

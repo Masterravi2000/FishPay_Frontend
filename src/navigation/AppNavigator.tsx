@@ -4,7 +4,9 @@ import HomeScreen from "../screens/HomeScreen";
 import PaymentScreen from "../screens/PaymentScreen";
 import ProductScreen from "../screens/ProductScreen";
 import PaymentStatusScreen from "../screens/PaymentStatusScreen";
-import OrderTrackScreen from "../screens/orderTrackScreen";
+import OrderTrack from "../screens/OrderTrack";
+import MyProfile from "../screens/MyProfile";
+import InvoiceHistory from "../screens/InvoiceHistory";
 
 
 const Stack = createNativeStackNavigator();
@@ -24,7 +26,9 @@ export default function AppNavigator() {
         />
         <Stack.Screen name="Payment" component={PaymentScreen} />
         <Stack.Screen name="PaymentStatus" component={PaymentStatusScreen} />
-        <Stack.Screen name="OrderTrack" component={OrderTrackScreen} />
+        <Stack.Screen name="OrderTrack" component={OrderTrack} />
+        <Stack.Screen name="MyProfile" component={MyProfile} />
+        <Stack.Screen name="InvoiceHistory" component={InvoiceHistory} />
       </Stack.Navigator>
     </NavigationContainer>
   );

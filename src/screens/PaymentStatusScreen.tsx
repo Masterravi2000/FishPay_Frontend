@@ -5,7 +5,7 @@ import {
   Animated,
   TouchableOpacity,
 } from "react-native";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import TextScallingFalse from "../components/CentralText/TextScalingFalse";
 import { useSelector } from "react-redux";
 import { RootState } from "../app/store";
@@ -14,6 +14,7 @@ import { Audio } from "expo-av";
 import SecureTickIcon from "../components/svgIcons/TickMarkIcons/SecureTickIcon";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { getInvoiceStatusApi } from "../features/payment/paymentApi";
 
 type RootStackParamList = {
   PaymentStatus: undefined;
@@ -27,6 +28,7 @@ const PaymentStatusScreen = () => {
   const { loading, verifyResponse } = useSelector(
     (state: RootState) => state.payment,
   );
+  const [invoiceUrl, setInvoiceUrl] = useState<string | null>(null);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const translateYAnim = useRef(new Animated.Value(20)).current;
   const textTranslateY = useRef(new Animated.Value(20)).current;
@@ -57,6 +59,21 @@ const PaymentStatusScreen = () => {
       invoiceSound.current?.unloadAsync();
     };
   }, []);
+
+  useEffect(() => {
+    if (!verifyResponse?.paymentId) return;
+
+    const interval = setInterval(async () => {
+      const response = await getInvoiceStatusApi(verifyResponse?.paymentId);
+
+      if (response?.invoiceUrl) {
+        setInvoiceUrl(response?.invoiceUrl);
+        clearInterval(interval);
+      }
+    }, 750);
+
+    return () => clearInterval(interval);
+  }, [verifyResponse?.paymentId]);
 
   useEffect(() => {
     if (!isSucess) return;
@@ -121,12 +138,16 @@ const PaymentStatusScreen = () => {
   };
 
   const lowerCount = [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
   ];
   const show = () => {
     return lowerCount.map((items, key) => {
       return <View key={key} style={styles.invoiceBottomDots} />;
     });
+  };
+
+  const downloadButton = () => {
+    console.log(invoiceUrl);
   };
 
   return (
@@ -151,7 +172,7 @@ const PaymentStatusScreen = () => {
               style={{ width: 150, height: 150 }}
             />
           ) : (
-            <View style={{ paddingVertical: 50, transform: [{ scale: 2 }] }}>
+            <View style={{ paddingVertical: 50, transform: [{ scale: 2.5 }] }}>
               <ActivityIndicator size="large" color="white" />
             </View>
           )}
@@ -258,7 +279,10 @@ const PaymentStatusScreen = () => {
                   </View>
                 </View>
                 <View style={styles.downloadButtonGap} />
-                <TouchableOpacity style={styles.invoiceDownloadButton}>
+                <TouchableOpacity
+                  onPress={downloadButton}
+                  style={styles.invoiceDownloadButton}
+                >
                   <TextScallingFalse style={styles.invoiceDownloadButtonText}>
                     Download PDF Receipt
                   </TextScallingFalse>
@@ -362,10 +386,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#4ec92f",
   },
   invoiceCutsLine: {
-    height: 1,
-    width: "90%",
+    width: "88%",
     borderStyle: "dashed",
-    backgroundColor: "#ececec",
+    borderTopWidth: 1.5,
+    borderTopColor: "#dddddd",
   },
   invoiceProductDetails: {
     backgroundColor: "white",
@@ -394,27 +418,25 @@ const styles = StyleSheet.create({
   },
   invoiceBottomDots: {
     backgroundColor: "#4ec92f",
-    width: 13,
+    width: 15,
     height: 7,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
   },
   invoiceBottomView: {
     width: "100%",
-    backgroundColor: "white",
     flexDirection: "row",
     gap: 2.8,
     paddingHorizontal: 3,
-    paddingTop: 7,
+    paddingTop: 8,
     justifyContent: "center",
+    marginBottom: -1,
   },
   invoiceComponentBackground: {
     width: "100%",
     backgroundColor: "white",
     borderTopRightRadius: 15,
     borderTopLeftRadius: 15,
-    borderBottomColor: "#4ec92f",
-    borderBottomWidth: 1,
   },
   bottomMarkContainer: {
     flexDirection: "row",
