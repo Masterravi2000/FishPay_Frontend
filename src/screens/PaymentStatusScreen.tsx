@@ -15,6 +15,8 @@ import SecureTickIcon from "../components/svgIcons/TickMarkIcons/SecureTickIcon"
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { getInvoiceStatusApi } from "../features/payment/paymentApi";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 
 type RootStackParamList = {
   PaymentStatus: undefined;
@@ -67,6 +69,7 @@ const PaymentStatusScreen = () => {
       const response = await getInvoiceStatusApi(verifyResponse?.paymentId);
 
       if (response?.invoiceUrl) {
+          console.log(response)
         setInvoiceUrl(response?.invoiceUrl);
         clearInterval(interval);
       }
@@ -146,8 +149,14 @@ const PaymentStatusScreen = () => {
     });
   };
 
-  const downloadButton = () => {
-    console.log(invoiceUrl);
+  const downloadInvoice = async () => {
+    if (!invoiceUrl) return;
+
+    const fileUri = FileSystem.documentDirectory + "invoice.pdf";
+
+    const result = await FileSystem.downloadAsync(invoiceUrl, fileUri);
+
+    await Sharing.shareAsync(result.uri);
   };
 
   return (
@@ -280,7 +289,7 @@ const PaymentStatusScreen = () => {
                 </View>
                 <View style={styles.downloadButtonGap} />
                 <TouchableOpacity
-                  onPress={downloadButton}
+                  onPress={downloadInvoice}
                   style={styles.invoiceDownloadButton}
                 >
                   <TextScallingFalse style={styles.invoiceDownloadButtonText}>
