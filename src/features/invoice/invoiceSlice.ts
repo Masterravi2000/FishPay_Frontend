@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchInvoiceHistory } from "./invoiceThunk"
+import { fetchInvoiceHistory, invoiceViewed } from "./invoiceThunk"
 
 interface InvoiceState {
     invoices: any[];
@@ -54,6 +54,15 @@ const invoiceSlice = createSlice({
             state.loading = false;
             state.loadingMore = false;
             state.error = action.payload as string;
+        })
+
+        .addCase(invoiceViewed.fulfilled, (state, action) => {
+            const invoice = state.invoices.find(
+                (item) => item.invoiceNumber === action.meta.arg.invoiceNumber
+            );
+            if(invoice) {
+                invoice.viewed = true;
+            }
         });
     },
 });

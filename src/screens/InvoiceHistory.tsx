@@ -18,7 +18,10 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../app/store";
-import { fetchInvoiceHistory } from "../features/invoice/invoiceThunk";
+import {
+  fetchInvoiceHistory,
+  invoiceViewed,
+} from "../features/invoice/invoiceThunk";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const scaleFactor = Math.min(SCREEN_WIDTH / 390, 1.15);
@@ -38,14 +41,17 @@ interface RawInvoice {
   orderId: string;
   orderTime: string; // ISO string
   totalAmount: number;
+  viewed: boolean;
 }
 
 interface Invoice {
   id: string;
+  invoiceNumber: string;
   orderNumber: string;
   date: string; // e.g. "9 Jul"
   amount: string; // e.g. "₹1,826"
   downloadUrl: string;
+  viewed: boolean;
 }
 
 interface InvoiceGroup {
@@ -83,10 +89,12 @@ const buildInvoiceGroups = (data: RawInvoice[]): InvoiceGroup[] => {
 
     const invoice: Invoice = {
       id: raw.invoiceNumber,
-      orderNumber: raw.orderId.replace("order_", "").slice(0, 10),
+      invoiceNumber: raw.invoiceNumber,
+      orderNumber: raw.orderId.replace("order_", "").slice(0, 14),
       date: `${d.getDate()} ${MONTH_NAMES[d.getMonth()].slice(0, 3)}`,
       amount: `₹${raw.totalAmount.toLocaleString("en-IN")}`,
       downloadUrl: raw.invoiceUrl,
+      viewed: raw.viewed,
     };
 
     if (!groupMap.has(monthKey)) {
@@ -132,6 +140,7 @@ const InvoiceHistory = () => {
 
   const handleDownload = async (invoice: Invoice) => {
     try {
+      await dispatch(invoiceViewed({ invoiceNumber: invoice.invoiceNumber }));
       const supported = await Linking.canOpenURL(invoice.downloadUrl);
       if (supported) {
         await Linking.openURL(invoice.downloadUrl);
@@ -154,16 +163,19 @@ const InvoiceHistory = () => {
         <Text style={styles.monthLabel}>{group.month}</Text>
       </View>
 
-      <View style={styles.invoiceCard}>
-        {group.invoices.map((invoice, index) => (
-          <TouchableOpacity
-            onPress={() => handleDownload(invoice)}
-            key={invoice.id}
-            style={[
-              styles.invoiceRow,
-              index !== group.invoices.length - 1 && styles.invoiceRowBorder,
-            ]}
-          >
+      {group.invoices.map((invoice, index) => (
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => handleDownload(invoice)}
+          key={index}
+          style={[
+            styles.invoiceCard,
+            {
+              backgroundColor: invoice.viewed ? "#fcfcfc" : "#f1fff6",
+            },
+          ]}
+        >
+          <View style={styles.invoiceRow}>
             <View style={styles.invoiceTextWrapper}>
               <Text style={styles.invoiceOrder}>
                 Order #{invoice.orderNumber}
@@ -177,11 +189,11 @@ const InvoiceHistory = () => {
               onPress={() => handleDownload(invoice)}
               hitSlop={10}
             >
-              <Feather name="download" size={scale(18)} color="#378ADD" />
+              <Feather name="download" size={scale(18)} color="#93ca82" />
             </TouchableOpacity>
-          </TouchableOpacity>
-        ))}
-      </View>
+          </View>
+        </TouchableOpacity>
+      ))}
     </View>
   );
 
@@ -301,19 +313,19 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#a9e098",
     borderRadius: scale(10),
     padding: scale(12),
   },
   statLabel: {
     fontSize: scale(12),
-    color: "#9ca3af",
+    color: "#328119",
     marginBottom: scale(4),
   },
   statValue: {
     fontSize: scale(20),
-    fontWeight: "600",
-    color: "#111827",
+    fontWeight: "700",
+    color: "#464646",
   },
   filterRow: {
     paddingHorizontal: scale(20),
@@ -331,8 +343,8 @@ const styles = StyleSheet.create({
     marginRight: scale(8),
   },
   filterChipActive: {
-    backgroundColor: "#111827",
-    borderColor: "#111827",
+    backgroundColor: "#93ca82",
+    borderColor: "#93ca82",
   },
   filterChipText: {
     fontSize: scale(12),
@@ -354,7 +366,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 1,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: "#caf8bc",
   },
   monthRow: {
     flexDirection: "row",
@@ -372,7 +384,7 @@ const styles = StyleSheet.create({
     borderColor: "#ffffff",
   },
   monthDotActive: {
-    backgroundColor: "#378ADD",
+    backgroundColor: "#398d1f",
   },
   monthLabel: {
     fontSize: scale(12),
@@ -382,19 +394,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   invoiceCard: {
-    backgroundColor: "#f9fafb",
     borderRadius: scale(12),
     padding: scale(4),
+    marginBottom: 5,
   },
   invoiceRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: scale(12),
-  },
-  invoiceRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
   },
   invoiceTextWrapper: {
     flex: 1,
@@ -407,7 +415,7 @@ const styles = StyleSheet.create({
   },
   invoiceMeta: {
     fontSize: scale(12),
-    color: "#9ca3af",
+    color: "#93ca82",
     marginTop: scale(2),
   },
   emptyText: {

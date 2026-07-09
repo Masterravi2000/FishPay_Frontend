@@ -11,3 +11,10 @@ export const getInvoiceHistory = async (
     );
     return response.data;
 }
+
+export const updateInvoiceView = async (invoiceNumber: string) => {
+    const response = await axios.patch(
+        `${BASE_URL}/api/v1/invoices/viewed/${invoiceNumber}`
+    );
+    return response.data;
+}

@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { getInvoiceHistory } from "./invoiceApi";
+import { getInvoiceHistory, updateInvoiceView } from "./invoiceApi";
 
 export const fetchInvoiceHistory = createAsyncThunk<
   {
@@ -9,11 +9,23 @@ export const fetchInvoiceHistory = createAsyncThunk<
     page: number;
   },
   { page?: number; size?: number }
->("invoice/fetchInvoiceHistory", 
-    async ({ page = 0, size = 10 }, thunkAPI) => {
+>("invoice/fetchInvoiceHistory", async ({ page = 0, size = 10 }, thunkAPI) => {
   try {
     const data = await getInvoiceHistory(page, size);
-    return {...data, page};
+    return { ...data, page };
+  } catch (error: any) {
+    return thunkAPI.rejectWithValue(error.response?.data || error.message);
+  }
+});
+
+export const invoiceViewed = createAsyncThunk<
+  any,
+  {
+    invoiceNumber: string;
+  }
+>("invoice/updateInvoiceView", async ({ invoiceNumber }, thunkAPI) => {
+  try {
+    return await updateInvoiceView(invoiceNumber);
   } catch (error: any) {
     return thunkAPI.rejectWithValue(error.response?.data || error.message);
   }

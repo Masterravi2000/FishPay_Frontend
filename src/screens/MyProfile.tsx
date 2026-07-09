@@ -144,7 +144,7 @@ const MyProfile = () => {
                 <Feather
                   name={item.icon}
                   size={scale(20)}
-                  color={item.danger ? "#ef4444" : "#374151"}
+                  color={item.danger ? "#93ca82" : "#374151"}
                 />
                 <Text
                   style={[
@@ -215,13 +215,13 @@ const styles = StyleSheet.create({
     marginBottom: scale(10),
   },
   editButton: {
-    backgroundColor: "#ef4444",
+    backgroundColor: "#acdf9d",
     borderRadius: scale(20),
     paddingVertical: scale(8),
     paddingHorizontal: scale(20),
     alignSelf: "flex-start",
   },
-  editButtonText: { color: "#ffffff", fontSize: scale(13), fontWeight: "600" },
+  editButtonText: { color: "#398d1f", fontSize: scale(13), fontWeight: "600" },
   menuList: { marginTop: scale(4) },
   menuItem: {
     flexDirection: "row",
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     marginLeft: scale(14),
     fontWeight: "500",
   },
-  menuLabelDanger: { color: "#ef4444" },
+  menuLabelDanger: { color: "#93ca82" },
 });
 
 export default MyProfile;
