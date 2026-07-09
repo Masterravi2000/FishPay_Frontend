@@ -65,9 +65,11 @@ const ProductScreen = () => {
           paddingHorizontal: 25,
         }}
       >
-        <BackButtonSvg />
+        <TouchableOpacity hitSlop={70} onPress={()=> navigation.navigate("MyProfile" as never)}>
+          <BackButtonSvg />
+        </TouchableOpacity>
         <View style={{ position: "relative", paddingLeft: 20 }}>
-          <TouchableOpacity activeOpacity={0.6} onPress={()=>navigation.navigate("Home" as never)}>
+          <TouchableOpacity hitSlop={70} activeOpacity={0.6} onPress={()=>navigation.navigate("Home" as never)}>
             <ShoppingBagIcon />
           </TouchableOpacity>
 

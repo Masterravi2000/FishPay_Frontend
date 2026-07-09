@@ -1,19 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  FlatList,
   ScrollView,
   Dimensions,
   PixelRatio,
   Linking,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../app/store";
+import { fetchInvoiceHistory } from "../features/invoice/invoiceThunk";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const scaleFactor = Math.min(SCREEN_WIDTH / 390, 1.15);
@@ -26,13 +31,20 @@ type RootStackParamList = {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// ---- Types matching expected backend shape ----
+// ---- Types matching real backend shape ----
+interface RawInvoice {
+  invoiceNumber: string;
+  invoiceUrl: string;
+  orderId: string;
+  orderTime: string; // ISO string
+  totalAmount: number;
+}
+
 interface Invoice {
   id: string;
   orderNumber: string;
-  date: string; // e.g. "3 Jul"
-  amount: string; // e.g. "₹2,450"
-  status: string; // e.g. "delivered"
+  date: string; // e.g. "9 Jul"
+  amount: string; // e.g. "₹1,826"
   downloadUrl: string;
 }
 
@@ -42,87 +54,81 @@ interface InvoiceGroup {
   invoices: Invoice[];
 }
 
-// ---- Dummy data — replace with API response ----
-const invoiceGroups: InvoiceGroup[] = [
-  {
-    month: "July 2026",
-    isCurrent: true,
-    invoices: [
-      {
-        id: "1",
-        orderNumber: "FP10234",
-        date: "3 Jul",
-        amount: "₹2,450",
-        status: "delivered",
-        downloadUrl: "https://example.com/invoices/FP10234.pdf",
-      },
-      {
-        id: "2",
-        orderNumber: "FP10198",
-        date: "1 Jul",
-        amount: "₹980",
-        status: "delivered",
-        downloadUrl: "https://example.com/invoices/FP10198.pdf",
-      },
-    ],
-  },
-  {
-    month: "June 2026",
-    isCurrent: false,
-    invoices: [
-      {
-        id: "3",
-        orderNumber: "FP09871",
-        date: "22 Jun",
-        amount: "₹1,720",
-        status: "delivered",
-        downloadUrl: "https://example.com/invoices/FP09871.pdf",
-      },
-      {
-        id: "4",
-        orderNumber: "FP09750",
-        date: "14 Jun",
-        amount: "₹3,105",
-        status: "delivered",
-        downloadUrl: "https://example.com/invoices/FP09750.pdf",
-      },
-      {
-        id: "5",
-        orderNumber: "FP09612",
-        date: "5 Jun",
-        amount: "₹640",
-        status: "delivered",
-        downloadUrl: "https://example.com/invoices/FP09612.pdf",
-      },
-    ],
-  },
-  {
-    month: "May 2026",
-    isCurrent: false,
-    invoices: [
-      {
-        id: "6",
-        orderNumber: "FP09340",
-        date: "30 May",
-        amount: "₹1,150",
-        status: "delivered",
-        downloadUrl: "https://example.com/invoices/FP09340.pdf",
-      },
-    ],
-  },
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
-// ---- Dummy stats — replace with API response ----
-const stats = {
-  totalInvoices: 18,
-  amountSpent: "₹24,860",
+// ---- Group raw invoices by month, formatted for UI ----
+const buildInvoiceGroups = (data: RawInvoice[]): InvoiceGroup[] => {
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+
+  const groupMap = new Map<string, InvoiceGroup>();
+
+  data.forEach((raw) => {
+    const d = new Date(raw.orderTime);
+    const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+    const monthLabel = `${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+
+    const invoice: Invoice = {
+      id: raw.invoiceNumber,
+      orderNumber: raw.orderId.replace("order_", "").slice(0, 10),
+      date: `${d.getDate()} ${MONTH_NAMES[d.getMonth()].slice(0, 3)}`,
+      amount: `₹${raw.totalAmount.toLocaleString("en-IN")}`,
+      downloadUrl: raw.invoiceUrl,
+    };
+
+    if (!groupMap.has(monthKey)) {
+      groupMap.set(monthKey, {
+        month: monthLabel,
+        isCurrent: monthKey === currentMonthKey,
+        invoices: [],
+      });
+    }
+    groupMap.get(monthKey)!.invoices.push(invoice);
+  });
+
+  return Array.from(groupMap.values());
 };
 
 const filters = ["All", "This year", "Downloaded"];
 
+const PAGE_SIZE = 20;
+
 const InvoiceHistory = () => {
   const navigation = useNavigation<NavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
   const [activeFilter, setActiveFilter] = React.useState("All");
+  const [page, setPage] = useState(0);
+
+  const { invoices, totalAmountSpent, totalInvoice, loadingMore } = useSelector(
+    (state: RootState) => state.invoices,
+  );
+
+  const hasMore = invoices.length < totalInvoice;
+
+  const invoiceGroups = React.useMemo(
+    () => buildInvoiceGroups(invoices ?? []),
+    [invoices],
+  );
+
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    const nextPage = page + 1;
+    dispatch(fetchInvoiceHistory({ page: nextPage, size: PAGE_SIZE }));
+    setPage(nextPage);
+  };
 
   const handleDownload = async (invoice: Invoice) => {
     try {
@@ -137,123 +143,129 @@ const InvoiceHistory = () => {
     }
   };
 
+  const renderGroup = ({ item: group }: { item: InvoiceGroup }) => (
+    <View style={styles.groupBlock}>
+      <View style={styles.timelineLine} />
+
+      <View style={styles.monthRow}>
+        <View
+          style={[styles.monthDot, group.isCurrent && styles.monthDotActive]}
+        />
+        <Text style={styles.monthLabel}>{group.month}</Text>
+      </View>
+
+      <View style={styles.invoiceCard}>
+        {group.invoices.map((invoice, index) => (
+          <TouchableOpacity
+            onPress={() => handleDownload(invoice)}
+            key={invoice.id}
+            style={[
+              styles.invoiceRow,
+              index !== group.invoices.length - 1 && styles.invoiceRowBorder,
+            ]}
+          >
+            <View style={styles.invoiceTextWrapper}>
+              <Text style={styles.invoiceOrder}>
+                Order #{invoice.orderNumber}
+              </Text>
+              <Text style={styles.invoiceMeta}>
+                {invoice.date} · {invoice.amount}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => handleDownload(invoice)}
+              hitSlop={10}
+            >
+              <Feather name="download" size={scale(18)} color="#378ADD" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
+  const ListHeader = () => (
+    <>
+      {/* Header */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+          <Feather name="arrow-left" size={scale(20)} color="#111827" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Invoices</Text>
+        <TouchableOpacity hitSlop={10}>
+          <Feather name="more-horizontal" size={scale(18)} color="#111827" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Stats */}
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Total invoices</Text>
+          <Text style={styles.statValue}>{totalInvoice ?? 0}</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Amount spent</Text>
+          <Text style={styles.statValue}>
+            ₹{(totalAmountSpent ?? 0).toLocaleString("en-IN")}
+          </Text>
+        </View>
+      </View>
+
+      {/* Filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+      >
+        {filters.map((filter) => (
+          <TouchableOpacity
+            key={filter}
+            style={[
+              styles.filterChip,
+              activeFilter === filter && styles.filterChipActive,
+            ]}
+            activeOpacity={0.7}
+            onPress={() => setActiveFilter(filter)}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                activeFilter === filter && styles.filterChipTextActive,
+              ]}
+            >
+              {filter}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <FlatList
+        data={invoiceGroups}
+        keyExtractor={(group) => group.month}
+        renderItem={renderGroup}
+        ListHeaderComponent={ListHeader}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-            <Feather name="arrow-left" size={scale(20)} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Invoices</Text>
-          <TouchableOpacity hitSlop={10}>
-            <Feather name="more-horizontal" size={scale(18)} color="#111827" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Total invoices</Text>
-            <Text style={styles.statValue}>{stats.totalInvoices}</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Amount spent</Text>
-            <Text style={styles.statValue}>{stats.amountSpent}</Text>
-          </View>
-        </View>
-
-        {/* Filter chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
-          {filters.map((filter) => (
-            <TouchableOpacity
-              key={filter}
-              style={[
-                styles.filterChip,
-                activeFilter === filter && styles.filterChipActive,
-              ]}
-              activeOpacity={0.7}
-              onPress={() => setActiveFilter(filter)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  activeFilter === filter && styles.filterChipTextActive,
-                ]}
-              >
-                {filter}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Timeline */}
-        <View style={styles.timelineWrapper}>
-          <View style={styles.timelineLine} />
-
-          {invoiceGroups.map((group, groupIndex) => (
-            <View
-              key={group.month}
-              style={[
-                styles.groupBlock,
-                groupIndex !== invoiceGroups.length - 1 && {
-                  marginBottom: scale(20),
-                },
-              ]}
-            >
-              <View style={styles.monthRow}>
-                <View
-                  style={[
-                    styles.monthDot,
-                    group.isCurrent && styles.monthDotActive,
-                  ]}
-                />
-                <Text style={styles.monthLabel}>{group.month}</Text>
-              </View>
-
-              <View style={styles.invoiceCard}>
-                {group.invoices.map((invoice, index) => (
-                  <View
-                    key={invoice.id}
-                    style={[
-                      styles.invoiceRow,
-                      index !== group.invoices.length - 1 &&
-                        styles.invoiceRowBorder,
-                    ]}
-                  >
-                    <View style={styles.invoiceTextWrapper}>
-                      <Text style={styles.invoiceOrder}>
-                        Order #{invoice.orderNumber}
-                      </Text>
-                      <Text style={styles.invoiceMeta}>
-                        {invoice.date} · {invoice.amount}
-                      </Text>
-                    </View>
-
-                    <TouchableOpacity
-                      onPress={() => handleDownload(invoice)}
-                      hitSlop={10}
-                    >
-                      <Feather
-                        name="download"
-                        size={scale(18)}
-                        color="#378ADD"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator
+              size="small"
+              color="#378ADD"
+              style={{ marginVertical: scale(16) }}
+            />
+          ) : null
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No invoices found.</Text>
+        }
+      />
     </SafeAreaView>
   );
 };
@@ -263,7 +275,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#ffffff",
   },
-  scrollContent: {
+  listContent: {
     paddingBottom: scale(24),
   },
   headerRow: {
@@ -330,21 +342,20 @@ const styles = StyleSheet.create({
   filterChipTextActive: {
     color: "#ffffff",
   },
-  timelineWrapper: {
+  groupBlock: {
     paddingHorizontal: scale(20),
     paddingLeft: scale(20) + scale(20),
-    paddingTop: scale(18),
+    marginTop: scale(20),
     position: "relative",
   },
   timelineLine: {
     position: "absolute",
     left: scale(20) + scale(5),
-    top: scale(24),
-    bottom: scale(24),
+    top: 0,
+    bottom: 0,
     width: 1,
     backgroundColor: "#e5e7eb",
   },
-  groupBlock: {},
   monthRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -398,6 +409,12 @@ const styles = StyleSheet.create({
     fontSize: scale(12),
     color: "#9ca3af",
     marginTop: scale(2),
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#9ca3af",
+    fontSize: scale(13),
+    marginTop: scale(40),
   },
 });
 

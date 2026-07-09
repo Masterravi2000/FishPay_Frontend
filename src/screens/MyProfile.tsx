@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "../app/store";
+import { fetchInvoiceHistory } from "../features/invoice/invoiceThunk";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const scaleFactor = Math.min(SCREEN_WIDTH / 390, 1.15);
@@ -52,7 +55,13 @@ const menuItems: MenuItem[] = [
 ];
 
 const MyProfile = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const navigation = useNavigation<NavigationProp>();
+
+  //Call the thunk for getting invoice History in this page
+  useEffect(() => {
+    dispatch(fetchInvoiceHistory({ page: 0, size: 20}));
+  },[]);
 
   const handleMenuItemPress = (id: string) => {
     switch (id) {

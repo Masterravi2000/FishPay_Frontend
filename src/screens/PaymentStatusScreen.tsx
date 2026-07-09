@@ -69,7 +69,6 @@ const PaymentStatusScreen = () => {
       const response = await getInvoiceStatusApi(verifyResponse?.paymentId);
 
       if (response?.invoiceUrl) {
-          console.log(response)
         setInvoiceUrl(response?.invoiceUrl);
         clearInterval(interval);
       }
