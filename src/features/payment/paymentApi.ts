@@ -3,6 +3,7 @@ import {
   CreateOrderRequest,
   CreateOrderResponse,
 } from "./paymentTypes";
+import axiosInstance from "../../utils/api/axiosInstance";
 
 const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
 
@@ -31,4 +32,14 @@ export const getInvoiceStatusApi = async (paymentId: string) => {
   } catch (error) {
     throw error;
   }
+}
+
+export const getPaymentHistory = async (
+  page: number = 0,
+  size: number = 20
+) => {
+  const response = await axiosInstance.get(
+    `/api/v1/payments/history?page=${page}&size=${size}`
+  );
+  return response.data;
 }

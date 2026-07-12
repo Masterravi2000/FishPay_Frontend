@@ -15,6 +15,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../app/store";
 import { fetchInvoiceHistory } from "../features/invoice/invoiceThunk";
+import { fetchPaymentHistory } from "../features/payment/paymentThunk";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const scaleFactor = Math.min(SCREEN_WIDTH / 390, 1.15);
@@ -25,7 +26,8 @@ type RootStackParamList = {
   MyProfile: undefined;
   EditProfile: undefined;
   Settings: undefined;
-  YourRefunds: undefined;
+  Refunds: undefined;
+  MyOrders: undefined;
   InvoiceHistory: undefined;
   PaymentManagements: undefined;
 };
@@ -61,18 +63,22 @@ const MyProfile = () => {
   //Call the thunk for getting invoice History in this page
   useEffect(() => {
     dispatch(fetchInvoiceHistory({ page: 0, size: 20}));
+    dispatch(fetchPaymentHistory({ page: 0, size: 20}));
   },[]);
 
   const handleMenuItemPress = (id: string) => {
     switch (id) {
       case "yourRefunds":
-        navigation.navigate("YourRefunds");
+        navigation.navigate("Refunds");
         break;
       case "invoice":
         navigation.navigate("InvoiceHistory");
         break;
       case "paymentManagements":
         navigation.navigate("PaymentManagements");
+        break;
+      case "orders":
+        navigation.navigate("MyOrders");
         break;
       default:
         // Wishlist, E-Gift Cards, Orders, Rewards, Saved Addresses
