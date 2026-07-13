@@ -5,20 +5,11 @@ import {
   Vibration,
   Image,
 } from "react-native";
-import { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import TextScallingFalse from "../components/CentralText/TextScalingFalse";
 import LogoIcon from "../components/svgIcons/LogoIcon";
 import CommonHeader from "../components/Header/CommonHeader";
-import GooglePayIcon from "../components/svgIcons/PaymentOptionsIcons/GooglePayIcon";
-import PaypalIcon from "../components/svgIcons/PaymentOptionsIcons/PaypalIcon";
-import MasterCardIcon from "../components/svgIcons/PaymentOptionsIcons/MasterCardIcon";
-import TickMarkBlackCircleIcon from "../components/svgIcons/TickMarkIcons/TickMarkBlackCircleIcon";
-import UnTickBlackCircleIcon from "../components/svgIcons/TickMarkIcons/UnTickBlackCircleItem";
 import SecureTickIcon from "../components/svgIcons/TickMarkIcons/SecureTickIcon";
-import AddPaymentButton from "../components/BottomButtons/AddPaymentButton";
-import MasterCard from "../components/CreditCards/MasterCard";
-import AddCardSection from "../components/CreditCards/AddCardSection";
 import { useSelector } from "react-redux";
 import { RootState } from "../app/store";
 import RazorpayCheckout from "react-native-razorpay";
@@ -39,66 +30,9 @@ type RootStackParamList = {
 const PaymentScreen = () => {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [selectedId, setSelectedId] = useState<number | null>(1);
   const { orderId, amount } = useSelector((state: RootState) => state.payment);
   const checkoutData = useSelector((state: RootState) => state.checkout);
   const dispatch = useDispatch();
-
-  const paymentOptionsDetails = [
-    {
-      id: 1,
-      name: "Master Card",
-      number: "********8463",
-      logo: <MasterCardIcon />,
-    },
-    {
-      id: 2,
-      name: "Paypal",
-      number: "orb*****@gmail.com",
-      logo: <PaypalIcon />,
-    },
-    {
-      id: 3,
-      name: "Google Pay",
-      number: "oks*****vi@gmail.com",
-      logo: <GooglePayIcon />,
-    },
-  ];
-
-  const select = (id: number) => {
-    Vibration.vibrate([0, 50]);
-    setSelectedId(id);
-  };
-
-  const paymentOption = paymentOptionsDetails.map((option, i) => {
-    return (
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={() => select(option.id)}
-        key={i}
-        style={styles.paymentOptionButtons}
-      >
-        <View style={styles.paymentOptionView}>
-          <View style={styles.paymentOptionLogo}>{option.logo}</View>
-          <View style={styles.paymentOptionNameDetail}>
-            <TextScallingFalse style={styles.paymentOptionNameText}>
-              {option.name}
-            </TextScallingFalse>
-            <TextScallingFalse style={styles.paymentOptionDetailText}>
-              {option.number}
-            </TextScallingFalse>
-          </View>
-        </View>
-        <View style={styles.paymentOptionTickMarkContainer}>
-          {selectedId === option.id ? (
-            <TickMarkBlackCircleIcon />
-          ) : (
-            <UnTickBlackCircleIcon />
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  });
 
   const EXPO_RAZORPAY_KEY_ID = process.env.EXPO_PUBLIC_RAZORPAY_KEY_ID;
 
@@ -108,7 +42,7 @@ const PaymentScreen = () => {
       amount: (amount ?? 0) * 100,
       currency: "INR",
       name: "FishPay",
-      description: "Test Transaction",
+      description: "Fishpay Payment Management system",
       order_id: orderId,
       method: "upi",
     };
@@ -124,8 +58,8 @@ const PaymentScreen = () => {
         paymentMethod: "",
         products: checkoutData.products,
         deliveryCharges: checkoutData.deliveryCharges,
-        totalAmount: checkoutData.totalAmount
-      }
+        totalAmount: checkoutData.totalAmount,
+      };
       dispatch(verifySignature(verifySignaturePayload) as any);
       navigation.navigate("PaymentStatus", {
         paymentData: data,
@@ -149,19 +83,6 @@ const PaymentScreen = () => {
             </View>
           }
         />
-        {/* Payment Options */}
-        {/* <View style={styles.paymentOptionContainer}>
-          <View style={styles.paymentOptionWhiteBackground}>
-            {paymentOption}
-            <View />
-            <AddPaymentButton />
-          </View>
-        </View> */}
-
-        {/* Card section */}
-        {/* <View style={styles.cardContainer}>
-          {selectedId === 1 ? <MasterCard /> : <AddCardSection />}
-        </View> */}
 
         <View
           style={{

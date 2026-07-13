@@ -16,6 +16,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "../app/store";
 import { fetchInvoiceHistory } from "../features/invoice/invoiceThunk";
 import { fetchPaymentHistory } from "../features/payment/paymentThunk";
+import { fetchRefundHistory } from "../features/refund/refundThunk";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const scaleFactor = Math.min(SCREEN_WIDTH / 390, 1.15);
@@ -64,6 +65,7 @@ const MyProfile = () => {
   useEffect(() => {
     dispatch(fetchInvoiceHistory({ page: 0, size: 20}));
     dispatch(fetchPaymentHistory({ page: 0, size: 20}));
+    dispatch(fetchRefundHistory({ page: 0, size: 20}));
   },[]);
 
   const handleMenuItemPress = (id: string) => {

@@ -13,8 +13,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useSelector } from "react-redux";
-import { RootState } from "../app/store";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../app/store";
+import { createRefund } from "../features/refund/refundApi";
+import { refundPayment } from "../features/refund/refundThunk";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const scaleFactor = Math.min(SCREEN_WIDTH / 390, 1.15);
@@ -283,52 +285,33 @@ const MyOrders = () => {
 
   const showOngoing = activeFilter === "All" || activeFilter === "Ongoing";
   const showDelivered = activeFilter === "All" || activeFilter === "Delivered";
+  const dispatch = useDispatch<AppDispatch>();
 
-  const handleTrack = (order: OngoingOrder) => {
-    // hook up navigation to order tracking screen
-    // navigation.navigate("OrderTrack", { orderId: order.orderNumber });
-  };
-
-  const handleCancel = (order: OngoingOrder) => {
-    Alert.alert(
-      "Cancel Order",
-      `Are you sure you want to cancel order #${order.orderNumber}?`,
-      [
-        { text: "No", style: "cancel" },
-        {
-          text: "Yes, Cancel",
-          style: "destructive",
-          onPress: () => {
-            // dispatch cancel order thunk/API call here
-          },
-        },
-      ],
-    );
-  };
+  const REFUND_REASONS = [
+    "Customer requested refund",
+    "Duplicate payment",
+    "Order cancelled",
+  ];
 
   const getLatestRefundablePayments = (payments: any[]) => {
     return payments
-      .filter((payment) => payment.refund === false)
+      .filter((payment) => payment.refunded === false)
       .sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       )
       .slice(0, 3)
-      .map(({ paymentId, amount }) => ({
+      .map(({ paymentId, amount }, index) => ({
         paymentId,
         amount,
+        reason: REFUND_REASONS[index],
       }));
   };
 
-  console.log(getLatestRefundablePayments)
+  const refundablePayments = getLatestRefundablePayments(payments);
 
-  const handleBuyAgain = (order: DeliveredOrder) => {
-    // hook up navigation to product/cart screen
-  };
-
-  const handleRefund = (order: DeliveredOrder) => {
-    // hook up navigation to refund request flow
-    // navigation.navigate("RequestRefund", { orderId: order.orderNumber });
+  const handleRefund = (item: any) => {
+    dispatch(refundPayment(item));
   };
 
   return (
@@ -426,16 +409,15 @@ const MyOrders = () => {
 
                     <View style={styles.actionsRow}>
                       <TouchableOpacity
-                        onPress={() => handleTrack(order)}
                         hitSlop={6}
                       >
                         <Text style={styles.actionTextAccent}>Track</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        onPress={() => handleCancel(order)}
+                        onPress={() => handleRefund(refundablePayments[index])}
                         hitSlop={6}
                       >
-                        <Text style={styles.actionTextDanger}>Cancel</Text>
+                        <Text style={styles.actionTextDanger}>Cancel & Refund</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -480,19 +462,15 @@ const MyOrders = () => {
                     </Text>
 
                     <View style={styles.actionsRow}>
-                      <TouchableOpacity
-                        onPress={() => handleBuyAgain(order)}
-                        hitSlop={6}
-                      >
+                      <TouchableOpacity hitSlop={6}>
                         <Text style={styles.actionTextPrimary}>Buy again</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        onPress={() => handleRefund(order)}
                         activeOpacity={0.5}
                         hitSlop={6}
                       >
                         <Text style={styles.actionTextSecondary}>
-                          Return & Refund
+                          Details
                         </Text>
                       </TouchableOpacity>
                     </View>

@@ -4,14 +4,18 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   Dimensions,
   PixelRatio,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "../app/store";
+import { fetchRefundHistory } from "../features/refund/refundThunk";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const scaleFactor = Math.min(SCREEN_WIDTH / 390, 1.15);
@@ -26,6 +30,15 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 // ---- Types ----
 type RefundStage = "requested" | "approved" | "credited";
+
+interface RawRefund {
+  amount: number;
+  completedAt: string;
+  orderId: string;
+  refundId: string;
+  requestedAt: string;
+  status: "PENDING" | "PROCESSED";
+}
 
 interface OngoingRefund {
   id: string;
@@ -43,206 +56,279 @@ interface CompletedRefund {
   amount: string;
 }
 
-// ---- Dummy data — replace with API response ----
-const stats = {
-  inProgress: 2,
-  totalRefunded: "₹3,240",
-};
-
-const ongoingRefunds: OngoingRefund[] = [
-  {
-    id: "1",
-    orderNumber: "FP10198",
-    requestedDate: "5 Jul",
-    amount: "₹980",
-    stage: "approved",
-    statusLabel: "Processing",
-  },
-  {
-    id: "2",
-    orderNumber: "FP10102",
-    requestedDate: "8 Jul",
-    amount: "₹1,150",
-    stage: "requested",
-    statusLabel: "Requested",
-  },
-];
-
-const completedRefunds: CompletedRefund[] = [
-  {
-    id: "3",
-    orderNumber: "FP09871",
-    creditedDate: "22 Jun",
-    amount: "₹1,720",
-  },
-  {
-    id: "4",
-    orderNumber: "FP09612",
-    creditedDate: "5 Jun",
-    amount: "₹640",
-  },
-];
+type ListItem =
+  | { type: "ongoingHeader" }
+  | { type: "ongoing"; data: OngoingRefund }
+  | { type: "completedHeader" }
+  | { type: "completed"; data: CompletedRefund };
 
 const STAGE_ORDER: RefundStage[] = ["requested", "approved", "credited"];
+const PAGE_SIZE = 20;
+
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const formatShortDate = (isoString: string): string => {
+  const d = new Date(isoString);
+  return `${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`;
+};
+
+const formatOrderNumber = (orderId: string): string =>
+  orderId.replace("order_", "").slice(0, 10);
 
 const Refunds = () => {
   const navigation = useNavigation<NavigationProp>();
+  const dispatch = useDispatch<AppDispatch>();
+  const [page, setPage] = React.useState(0);
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setPage(0);
+    await dispatch(fetchRefundHistory({ page: 0, size: 20 }));
+    setRefreshing(false);
+  }
+
+  const {
+    refunds,
+    totalRefundAmount,
+    totalRefunds,
+    totalRefundsInProgress,
+    loadingMore,
+  } = useSelector((state: RootState) => state.refunds);
 
   const getStageIndex = (stage: RefundStage) => STAGE_ORDER.indexOf(stage);
 
+  const ongoingRefunds: OngoingRefund[] = React.useMemo(
+    () =>
+      (refunds as RawRefund[] | undefined)
+        ?.filter((r) => r.status === "PENDING")
+        .map((r) => ({
+          id: r.refundId,
+          orderNumber: formatOrderNumber(r.orderId),
+          requestedDate: formatShortDate(r.requestedAt),
+          amount: `₹${r.amount.toLocaleString("en-IN")}`,
+          stage: "requested" as RefundStage,
+          statusLabel:
+            r.status.charAt(0) + r.status.slice(1).toLowerCase(),
+        })) ?? [],
+    [refunds]
+  );
+
+  const completedRefunds: CompletedRefund[] = React.useMemo(
+    () =>
+      (refunds as RawRefund[] | undefined)
+        ?.filter((r) => r.status === "PROCESSED")
+        .map((r) => ({
+          id: r.refundId,
+          orderNumber: formatOrderNumber(r.orderId),
+          creditedDate: formatShortDate(r.completedAt),
+          amount: `₹${r.amount.toLocaleString("en-IN")}`,
+        })) ?? [],
+    [refunds]
+  );
+
+  const hasMore = (refunds?.length ?? 0) < (totalRefunds ?? 0);
+
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    const nextPage = page + 1;
+    dispatch(fetchRefundHistory({ page: nextPage, size: PAGE_SIZE }));
+    setPage(nextPage);
+  };
+
+  // Flatten both sections into a single list for FlatList
+  const listData: ListItem[] = React.useMemo(() => {
+    const items: ListItem[] = [];
+    if (ongoingRefunds.length > 0) {
+      items.push({ type: "ongoingHeader" });
+      ongoingRefunds.forEach((r) => items.push({ type: "ongoing", data: r }));
+    }
+    if (completedRefunds.length > 0) {
+      items.push({ type: "completedHeader" });
+      completedRefunds.forEach((r) =>
+        items.push({ type: "completed", data: r })
+      );
+    }
+    return items;
+  }, [ongoingRefunds, completedRefunds]);
+
+  const renderItem = ({ item }: { item: ListItem }) => {
+    if (item.type === "ongoingHeader") {
+      return <Text style={styles.sectionLabel}>Ongoing</Text>;
+    }
+
+    if (item.type === "completedHeader") {
+      return <Text style={styles.sectionLabel}>Completed</Text>;
+    }
+
+    if (item.type === "ongoing") {
+      const refund = item.data;
+      const activeIndex = getStageIndex(refund.stage);
+      const isWarning = refund.stage === "approved";
+
+      return (
+        <View style={styles.sectionContent}>
+          <View style={styles.ongoingCard}>
+            <View style={styles.ongoingHeaderRow}>
+              <Text style={styles.orderNumberText}>
+                Order #{refund.orderNumber}
+              </Text>
+              <Text
+                style={[
+                  styles.statusBadgeText,
+                  isWarning
+                    ? styles.statusBadgeTextWarning
+                    : styles.statusBadgeTextAccent,
+                ]}
+              >
+                {refund.statusLabel}
+              </Text>
+            </View>
+
+            <Text style={styles.ongoingMeta}>
+              Requested {refund.requestedDate} · {refund.amount}
+            </Text>
+
+            <View style={styles.progressBarRow}>
+              {STAGE_ORDER.map((stage, index) => (
+                <View
+                  key={stage}
+                  style={[
+                    styles.progressSegment,
+                    index <= activeIndex
+                      ? isWarning
+                        ? styles.progressSegmentWarning
+                        : styles.progressSegmentAccent
+                      : styles.progressSegmentInactive,
+                  ]}
+                />
+              ))}
+            </View>
+
+            <View style={styles.progressLabelRow}>
+              <Text
+                style={[
+                  styles.progressLabelText,
+                  activeIndex === 0 &&
+                    (isWarning
+                      ? styles.progressLabelWarning
+                      : styles.progressLabelAccent),
+                ]}
+              >
+                Requested
+              </Text>
+              <Text
+                style={[
+                  styles.progressLabelText,
+                  activeIndex === 1 &&
+                    (isWarning
+                      ? styles.progressLabelWarning
+                      : styles.progressLabelAccent),
+                ]}
+              >
+                Approved
+              </Text>
+              <Text
+                style={[
+                  styles.progressLabelText,
+                  activeIndex === 2 &&
+                    (isWarning
+                      ? styles.progressLabelWarning
+                      : styles.progressLabelAccent),
+                ]}
+              >
+                Credited
+              </Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    // completed
+    const refund = item.data;
+    return (
+      <View style={styles.completedSection}>
+        <View style={styles.completedRow}>
+          <View style={styles.completedIconWrapper}>
+            <Feather name="check" size={scale(16)} color="#16a34a" />
+          </View>
+
+          <View style={styles.completedTextWrapper}>
+            <Text style={styles.orderNumberText}>
+              Order #{refund.orderNumber}
+            </Text>
+            <Text style={styles.completedMeta}>
+              Credited {refund.creditedDate}
+            </Text>
+          </View>
+
+          <Text style={styles.completedAmount}>{refund.amount}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const ListHeader = () => (
+    <>
+      {/* Header */}
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+          <Feather name="arrow-left" size={scale(20)} color="#111827" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Your Refunds</Text>
+        <View style={{ width: scale(20) }} />
+      </View>
+
+      {/* Stats */}
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>In progress</Text>
+          <Text style={styles.statValue}>{totalRefundsInProgress ?? 0}</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statLabel}>Total refunded</Text>
+          <Text style={styles.statValue}>
+            ₹{(totalRefundAmount ?? 0).toLocaleString("en-IN")}
+          </Text>
+        </View>
+      </View>
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
+      <FlatList
+        data={listData}
+        keyExtractor={(item, index) =>
+          item.type === "ongoing" || item.type === "completed"
+            ? item.data.id
+            : `${item.type}-${index}`
+        }
+        renderItem={renderItem}
+        ListHeaderComponent={ListHeader}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-            <Feather name="arrow-left" size={scale(20)} color="#111827" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Your Refunds</Text>
-          <View style={{ width: scale(20) }} />
-        </View>
-
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>In progress</Text>
-            <Text style={styles.statValue}>{stats.inProgress}</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Total refunded</Text>
-            <Text style={styles.statValue}>{stats.totalRefunded}</Text>
-          </View>
-        </View>
-
-        {/* Ongoing section */}
-        <Text style={styles.sectionLabel}>Ongoing</Text>
-
-        <View style={styles.sectionContent}>
-          {ongoingRefunds.map((refund) => {
-            const activeIndex = getStageIndex(refund.stage);
-            const isWarning = refund.stage === "approved";
-
-            return (
-              <View key={refund.id} style={styles.ongoingCard}>
-                <View style={styles.ongoingHeaderRow}>
-                  <Text style={styles.orderNumberText}>
-                    Order #{refund.orderNumber}
-                  </Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      isWarning
-                        ? styles.statusBadgeWarning
-                        : styles.statusBadgeAccent,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusBadgeText,
-                        isWarning
-                          ? styles.statusBadgeTextWarning
-                          : styles.statusBadgeTextAccent,
-                      ]}
-                    >
-                      {refund.statusLabel}
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={styles.ongoingMeta}>
-                  Requested {refund.requestedDate} · {refund.amount}
-                </Text>
-
-                <View style={styles.progressBarRow}>
-                  {STAGE_ORDER.map((stage, index) => (
-                    <View
-                      key={stage}
-                      style={[
-                        styles.progressSegment,
-                        index <= activeIndex
-                          ? isWarning
-                            ? styles.progressSegmentWarning
-                            : styles.progressSegmentAccent
-                          : styles.progressSegmentInactive,
-                      ]}
-                    />
-                  ))}
-                </View>
-
-                <View style={styles.progressLabelRow}>
-                  <Text
-                    style={[
-                      styles.progressLabelText,
-                      activeIndex === 0 &&
-                        (isWarning
-                          ? styles.progressLabelWarning
-                          : styles.progressLabelAccent),
-                    ]}
-                  >
-                    Requested
-                  </Text>
-                  <Text
-                    style={[
-                      styles.progressLabelText,
-                      activeIndex === 1 &&
-                        (isWarning
-                          ? styles.progressLabelWarning
-                          : styles.progressLabelAccent),
-                    ]}
-                  >
-                    Approved
-                  </Text>
-                  <Text
-                    style={[
-                      styles.progressLabelText,
-                      activeIndex === 2 &&
-                        (isWarning
-                          ? styles.progressLabelWarning
-                          : styles.progressLabelAccent),
-                    ]}
-                  >
-                    Credited
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Completed section */}
-        <Text style={styles.sectionLabel}>Completed</Text>
-
-        <View style={styles.completedSection}>
-          {completedRefunds.map((refund, index) => (
-            <View
-              key={refund.id}
-              style={[
-                styles.completedRow,
-                index !== completedRefunds.length - 1 &&
-                  styles.completedRowBorder,
-              ]}
-            >
-              <View style={styles.completedIconWrapper}>
-                <Feather name="check" size={scale(16)} color="#16a34a" />
-              </View>
-
-              <View style={styles.completedTextWrapper}>
-                <Text style={styles.orderNumberText}>
-                  Order #{refund.orderNumber}
-                </Text>
-                <Text style={styles.completedMeta}>
-                  Credited {refund.creditedDate}
-                </Text>
-              </View>
-
-              <Text style={styles.completedAmount}>{refund.amount}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+        onEndReached={handleLoadMore}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator
+              size="small"
+              color="#378ADD"
+              style={{ marginVertical: scale(16) }}
+            />
+          ) : null
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No refunds found.</Text>
+        }
+      />
     </SafeAreaView>
   );
 };
@@ -278,19 +364,19 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#a9e098",
     borderRadius: scale(10),
     padding: scale(12),
   },
   statLabel: {
     fontSize: scale(12),
-    color: "#9ca3af",
+    color: "#328119",
     marginBottom: scale(4),
   },
   statValue: {
     fontSize: scale(20),
     fontWeight: "600",
-    color: "#111827",
+    color: "#464646",
   },
   sectionLabel: {
     fontSize: scale(12),
@@ -306,7 +392,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(20),
   },
   ongoingCard: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#f1fff6",
     borderRadius: scale(12),
     padding: scale(14),
     marginBottom: scale(10),
@@ -328,20 +414,20 @@ const styles = StyleSheet.create({
     borderRadius: scale(20),
   },
   statusBadgeWarning: {
-    backgroundColor: "#fef9c3",
+    backgroundColor: "#c3f0b5",
   },
   statusBadgeAccent: {
-    backgroundColor: "#e0edff",
+    backgroundColor: "#c3f0b5",
   },
   statusBadgeText: {
     fontSize: scale(11),
     fontWeight: "500",
   },
   statusBadgeTextWarning: {
-    color: "#b45309",
+    color: "#85ca6f",
   },
   statusBadgeTextAccent: {
-    color: "#378ADD",
+    color: "#98db83",
   },
   ongoingMeta: {
     fontSize: scale(12),
@@ -358,10 +444,10 @@ const styles = StyleSheet.create({
     borderRadius: scale(2),
   },
   progressSegmentAccent: {
-    backgroundColor: "#378ADD",
+    backgroundColor: "#a9e098",
   },
   progressSegmentWarning: {
-    backgroundColor: "#eab308",
+    backgroundColor: "#a9e098",
   },
   progressSegmentInactive: {
     backgroundColor: "#e5e7eb",
@@ -376,10 +462,10 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
   },
   progressLabelAccent: {
-    color: "#378ADD",
+    color: "#9ca3af",
   },
   progressLabelWarning: {
-    color: "#b45309",
+    color: "#9ca3af",
   },
   completedSection: {
     paddingHorizontal: scale(20),
@@ -388,6 +474,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: scale(12),
+    paddingHorizontal: scale(3),
   },
   completedRowBorder: {
     borderBottomWidth: 1,
@@ -407,13 +494,19 @@ const styles = StyleSheet.create({
   },
   completedMeta: {
     fontSize: scale(12),
-    color: "#9ca3af",
+    color: "#9cd38b",
     marginTop: scale(2),
   },
   completedAmount: {
     fontSize: scale(14),
     fontWeight: "500",
     color: "#111827",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#9ca3af",
+    fontSize: scale(13),
+    marginTop: scale(40),
   },
 });
 
