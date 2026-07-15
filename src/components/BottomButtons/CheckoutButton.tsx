@@ -5,7 +5,7 @@ import TextScallingFalse from "../CentralText/TextScalingFalse";
 const CheckoutButton = ({handlePayment}:{handlePayment: () => void}) => {
   return (
     <TouchableOpacity
-    activeOpacity={0.8}
+    activeOpacity={0.95}
     onPress={handlePayment}
       style={{
         width: "100%",

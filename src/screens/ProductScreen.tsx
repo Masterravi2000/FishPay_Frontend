@@ -265,7 +265,7 @@ const ProductScreen = () => {
           position: "absolute",
           bottom: 0,
           paddingHorizontal: 25,
-          paddingVertical: 20,
+          paddingVertical: 30,
           flexDirection: "row",
           justifyContent: "space-between",
           width: "100%",
@@ -287,7 +287,7 @@ const ProductScreen = () => {
         {addItem === 2 ? (
           <TouchableOpacity
             onPress={additem}
-            activeOpacity={0.8}
+            activeOpacity={0.9}
             style={{
               borderRadius: 15,
               backgroundColor: "#93ca82",
@@ -311,7 +311,7 @@ const ProductScreen = () => {
               borderRadius: 15,
               borderColor: "#93ca82",
               borderWidth: 1,
-              paddingHorizontal: 78,
+              paddingHorizontal: 77,
               paddingVertical: 15,
               justifyContent: "center",
               alignItems: "center",

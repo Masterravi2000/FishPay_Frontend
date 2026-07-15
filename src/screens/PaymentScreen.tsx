@@ -95,7 +95,7 @@ const PaymentScreen = () => {
           <LottieView
             source={require("../../assets/animations/Wallet.json")}
             autoPlay
-            loop
+            loop={false}
             style={{ width: 200, height: 200 }}
           />
           <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -193,7 +193,7 @@ const PaymentScreen = () => {
               <View style={styles.extraView} />
               <TouchableOpacity
                 onPress={handlePayNow}
-                activeOpacity={0.9}
+                activeOpacity={0.95}
                 style={styles.payNowButton}
               >
                 <TextScallingFalse style={styles.payNowButtonText}>

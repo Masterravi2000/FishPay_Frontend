@@ -33,7 +33,7 @@ const OrderTrack = () => {
           title="Order Track"
           rightComponent={
             <View style={styles.LogoContainer}>
-              <TouchableOpacity onPress={()=>navigation.navigate('MyProfile')}>
+              <TouchableOpacity activeOpacity={0.6} onPress={()=>navigation.navigate('MyProfile')}>
                 <View style={styles.LogoView}>
                   <UserIcon />
                 </View>

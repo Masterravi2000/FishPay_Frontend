@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#a9e098",
     borderRadius: scale(10),
-    padding: scale(12),
+    padding: scale(15),
   },
   statLabel: {
     fontSize: scale(12),

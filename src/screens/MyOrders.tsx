@@ -7,7 +7,8 @@ import {
   ScrollView,
   Dimensions,
   PixelRatio,
-  Alert,
+  Image,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -15,8 +16,16 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../app/store";
-import { createRefund } from "../features/refund/refundApi";
 import { refundPayment } from "../features/refund/refundThunk";
+import productImg1 from "../../assets/Products_Images/GreenPropolis.jpg";
+import productImg2 from "../../assets/Products_Images/PropolisLight.png";
+import productImg3 from "../../assets/Products_Images/RealFlawless.jpg";
+
+import productImg4 from "../../assets/Products_Images/lipstick.jpg";
+import productImg5 from "../../assets/Products_Images/highlighter Duo.jpg";
+import productImg6 from "../../assets/Products_Images/CompactPowder.jpg";
+import productImg7 from "../../assets/Products_Images/waterProoofMascara.jpg";
+import productImg8 from "../../assets/Products_Images/eyeBrowPencil.jpeg";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const scaleFactor = Math.min(SCREEN_WIDTH / 390, 1.15);
@@ -41,7 +50,7 @@ interface OngoingOrder {
   status: OngoingStatus;
   statusLabel: string;
   arrivingDate: string;
-  icon: React.ComponentProps<typeof Feather>["name"];
+  imageUrl: string;
 }
 
 interface DeliveredOrder {
@@ -51,7 +60,7 @@ interface DeliveredOrder {
   variant: string;
   price: string;
   deliveredDate: string;
-  icon: React.ComponentProps<typeof Feather>["name"];
+  imageUrl: string;
 }
 
 type FilterType = "All" | "Ongoing" | "Delivered";
@@ -61,35 +70,35 @@ const ongoingOrders: OngoingOrder[] = [
   {
     id: "1",
     orderNumber: "FP10245",
-    productName: "Matte Liquid Foundation",
-    variant: "Shade 220",
-    price: "₹899",
+    productName: "Green Propolis Ampule Mask",
+    variant: "Mask 220P",
+    price: "₹505.0",
     status: "transit",
-    statusLabel: "Transit",
-    arrivingDate: "14 Jul",
-    icon: "droplet",
+    statusLabel: "Confirmed",
+    arrivingDate: "18 Jul",
+    imageUrl: productImg1,
   },
   {
     id: "2",
     orderNumber: "FP10231",
-    productName: "Eyeshadow Palette",
-    variant: "Nude Edit",
-    price: "₹1,450",
+    productName: "Propolis Light Cream",
+    variant: "Cream 3TE4",
+    price: "₹332.0",
     status: "packed",
-    statusLabel: "Packed",
-    arrivingDate: "16 Jul",
-    icon: "package",
+    statusLabel: "Confirmed",
+    arrivingDate: "21 Jul",
+    imageUrl: productImg2,
   },
   {
     id: "3",
     orderNumber: "FP10231",
-    productName: "Eyeshadow Palette",
-    variant: "Nude Edit",
-    price: "₹1,450",
+    productName: "Real Flawless Luminous Perfecting Pressed",
+    variant: "Powder N404",
+    price: "₹484.0",
     status: "packed",
-    statusLabel: "Packed",
-    arrivingDate: "16 Jul",
-    icon: "package",
+    statusLabel: "Confirmed",
+    arrivingDate: "21 Jul",
+    imageUrl: productImg3,
   },
 ];
 
@@ -101,7 +110,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "3 Shades",
     price: "₹980",
     deliveredDate: "1 Jul",
-    icon: "gift",
+    imageUrl: productImg4,
   },
   {
     id: "2",
@@ -110,7 +119,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Rose Gold",
     price: "₹1,720",
     deliveredDate: "22 Jun",
-    icon: "star",
+    imageUrl: productImg5,
   },
   {
     id: "3",
@@ -119,7 +128,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Shade Ivory",
     price: "₹650",
     deliveredDate: "14 Jun",
-    icon: "circle",
+    imageUrl: productImg6,
   },
   {
     id: "4",
@@ -128,7 +137,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Jet Black",
     price: "₹499",
     deliveredDate: "5 Jun",
-    icon: "eye",
+    imageUrl: productImg7,
   },
   {
     id: "5",
@@ -137,7 +146,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Ash Brown",
     price: "₹350",
     deliveredDate: "30 May",
-    icon: "edit-3",
+    imageUrl: productImg8,
   },
   {
     id: "6",
@@ -146,7 +155,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "100ml",
     price: "₹899",
     deliveredDate: "24 May",
-    icon: "wind",
+    imageUrl: "",
   },
   {
     id: "7",
@@ -155,7 +164,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Shade 3",
     price: "₹549",
     deliveredDate: "18 May",
-    icon: "target",
+    imageUrl: "",
   },
   {
     id: "8",
@@ -164,7 +173,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Peach Edit",
     price: "₹1,150",
     deliveredDate: "10 May",
-    icon: "heart",
+    imageUrl: "",
   },
   {
     id: "9",
@@ -173,7 +182,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Clear Shine",
     price: "₹720",
     deliveredDate: "3 May",
-    icon: "droplet",
+    imageUrl: "",
   },
   {
     id: "10",
@@ -182,7 +191,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "12 Piece",
     price: "₹1,999",
     deliveredDate: "27 Apr",
-    icon: "feather",
+    imageUrl: "",
   },
   {
     id: "11",
@@ -191,7 +200,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Medium",
     price: "₹599",
     deliveredDate: "20 Apr",
-    icon: "sun",
+    imageUrl: "",
   },
   {
     id: "12",
@@ -200,7 +209,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Black",
     price: "₹299",
     deliveredDate: "14 Apr",
-    icon: "pen-tool",
+    imageUrl: "",
   },
   {
     id: "13",
@@ -209,7 +218,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "6 Colors",
     price: "₹850",
     deliveredDate: "6 Apr",
-    icon: "grid",
+    imageUrl: "",
   },
   {
     id: "14",
@@ -218,7 +227,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "50ml",
     price: "₹749",
     deliveredDate: "30 Mar",
-    icon: "shield",
+    imageUrl: "",
   },
   {
     id: "15",
@@ -227,7 +236,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Medium-Dark",
     price: "₹1,299",
     deliveredDate: "22 Mar",
-    icon: "layers",
+    imageUrl: "",
   },
   {
     id: "16",
@@ -236,7 +245,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Pack of 30",
     price: "₹249",
     deliveredDate: "15 Mar",
-    icon: "square",
+    imageUrl: "",
   },
   {
     id: "17",
@@ -245,7 +254,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "5 Pack",
     price: "₹399",
     deliveredDate: "8 Mar",
-    icon: "smile",
+    imageUrl: "",
   },
   {
     id: "18",
@@ -254,7 +263,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Translucent",
     price: "₹679",
     deliveredDate: "1 Mar",
-    icon: "cloud",
+    imageUrl: "",
   },
   {
     id: "19",
@@ -263,7 +272,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "Nude & Rose",
     price: "₹450",
     deliveredDate: "22 Feb",
-    icon: "edit-2",
+    imageUrl: "",
   },
   {
     id: "20",
@@ -272,7 +281,7 @@ const deliveredOrders: DeliveredOrder[] = [
     variant: "10ml",
     price: "₹1,499",
     deliveredDate: "14 Feb",
-    icon: "zap",
+    imageUrl: "",
   },
 ];
 
@@ -282,6 +291,10 @@ const MyOrders = () => {
   const navigation = useNavigation<NavigationProp>();
   const [activeFilter, setActiveFilter] = React.useState<FilterType>("All");
   const { payments } = useSelector((state: RootState) => state.payment);
+  const [confirmModalVisible, setConfirmModalVisible] = React.useState(false);
+  const [selectedOrderIndex, setSelectedOrderIndex] = React.useState<
+    number | null
+  >(null);
 
   const showOngoing = activeFilter === "All" || activeFilter === "Ongoing";
   const showDelivered = activeFilter === "All" || activeFilter === "Delivered";
@@ -312,6 +325,19 @@ const MyOrders = () => {
 
   const handleRefund = (item: any) => {
     dispatch(refundPayment(item));
+  };
+
+  const handleConfirmCancel = () => {
+    if (selectedOrderIndex !== null) {
+      handleRefund(refundablePayments[selectedOrderIndex]);
+    }
+    setConfirmModalVisible(false);
+    setSelectedOrderIndex(null);
+  };
+
+  const handleDismissModal = () => {
+    setConfirmModalVisible(false);
+    setSelectedOrderIndex(null);
   };
 
   return (
@@ -369,10 +395,14 @@ const MyOrders = () => {
                   ]}
                 >
                   <View style={styles.thumbnail}>
-                    <Feather
-                      name={order.icon}
-                      size={scale(20)}
-                      color="#9ca3af"
+                    <Image
+                      source={
+                        typeof order.imageUrl === "string"
+                          ? { uri: order.imageUrl }
+                          : order.imageUrl
+                      }
+                      style={styles.thumbnailImage}
+                      resizeMode="cover"
                     />
                   </View>
 
@@ -408,16 +438,20 @@ const MyOrders = () => {
                     </Text>
 
                     <View style={styles.actionsRow}>
-                      <TouchableOpacity
-                        hitSlop={6}
-                      >
+                      <TouchableOpacity hitSlop={6}>
                         <Text style={styles.actionTextAccent}>Track</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        onPress={() => handleRefund(refundablePayments[index])}
+                      activeOpacity={0.7}
+                        onPress={() => {
+                          setSelectedOrderIndex(index);
+                          setConfirmModalVisible(true);
+                        }}
                         hitSlop={6}
                       >
-                        <Text style={styles.actionTextDanger}>Cancel & Refund</Text>
+                        <Text style={styles.actionTextDanger}>
+                          Cancel & Refund
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -442,10 +476,14 @@ const MyOrders = () => {
                   ]}
                 >
                   <View style={styles.thumbnail}>
-                    <Feather
-                      name={order.icon}
-                      size={scale(20)}
-                      color="#9ca3af"
+                    <Image
+                      source={
+                        typeof order.imageUrl === "string"
+                          ? { uri: order.imageUrl }
+                          : order.imageUrl
+                      }
+                      style={styles.thumbnailImage}
+                      resizeMode="cover"
                     />
                   </View>
 
@@ -465,13 +503,8 @@ const MyOrders = () => {
                       <TouchableOpacity hitSlop={6}>
                         <Text style={styles.actionTextPrimary}>Buy again</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        activeOpacity={0.5}
-                        hitSlop={6}
-                      >
-                        <Text style={styles.actionTextSecondary}>
-                          Details
-                        </Text>
+                      <TouchableOpacity activeOpacity={0.5} hitSlop={6}>
+                        <Text style={styles.actionTextSecondary}>Details</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -489,6 +522,47 @@ const MyOrders = () => {
             <Text style={styles.emptyText}>No orders found.</Text>
           )}
       </ScrollView>
+      <Modal
+        visible={confirmModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleDismissModal}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={handleDismissModal}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.iosModalCard}>
+            <Text style={styles.iosModalTitle}>Cancel Order?</Text>
+            <Text style={styles.iosModalDescription}>
+             Are you sure you want to cancel your order? If yes, your refund will be credited within 24 hours.
+            </Text>
+
+            <View style={styles.iosDivider} />
+
+            <View style={styles.iosButtonsRow}>
+              <TouchableOpacity
+                style={styles.iosButton}
+                activeOpacity={0.6}
+                onPress={handleDismissModal}
+              >
+                <Text style={styles.iosButtonTextCancel}>Keep Order</Text>
+              </TouchableOpacity>
+
+              <View style={styles.iosButtonDivider} />
+
+              <TouchableOpacity
+                style={styles.iosButton}
+                activeOpacity={0.6}
+                onPress={handleConfirmCancel}
+              >
+                <Text style={styles.iosButtonTextDanger}>Yes Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -558,7 +632,7 @@ const styles = StyleSheet.create({
   },
   orderRow: {
     flexDirection: "row",
-    gap: scale(10),
+    gap: scale(17),
     paddingVertical: scale(12),
   },
   orderRowBorder: {
@@ -570,9 +644,11 @@ const styles = StyleSheet.create({
     height: scale(48),
     borderRadius: scale(9),
     backgroundColor: "#f9fafb",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+    overflow: "hidden",
+  },
+  thumbnailImage: {
+    width: "100%",
+    height: "100%",
   },
   orderTextWrapper: {
     flex: 1,
@@ -603,7 +679,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   statusBadgeAccent: {
-    backgroundColor: "#e0edff",
+    backgroundColor: "#fef9c3",
   },
   statusBadgeWarning: {
     backgroundColor: "#fef9c3",
@@ -613,7 +689,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   statusBadgeTextAccent: {
-    color: "#378ADD",
+    color: "#b45309",
   },
   statusBadgeTextWarning: {
     color: "#b45309",
@@ -653,6 +729,64 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
     fontSize: scale(13),
     marginTop: scale(40),
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: scale(40),
+  },
+  iosModalCard: {
+    width: "100%",
+    backgroundColor: "#ffffff",
+    borderRadius: scale(14),
+    overflow: "hidden",
+    paddingTop: scale(18),
+    paddingHorizontal: scale(16),
+  },
+  iosModalTitle: {
+    fontSize: scale(15),
+    fontWeight: "600",
+    color: "#111827",
+    textAlign: "center",
+    marginBottom: scale(4),
+  },
+  iosModalDescription: {
+    fontSize: scale(12.5),
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: scale(17),
+    paddingBottom: scale(16),
+  },
+  iosDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "#d1d5db",
+    marginHorizontal: -scale(16),
+  },
+  iosButtonsRow: {
+    flexDirection: "row",
+    marginHorizontal: -scale(16),
+  },
+  iosButton: {
+    flex: 1,
+    height: scale(44),
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iosButtonDivider: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: "#d1d5db",
+  },
+  iosButtonTextCancel: {
+    fontSize: scale(14.5),
+    color: "#378ADD",
+    fontWeight: "500",
+  },
+  iosButtonTextDanger: {
+    fontSize: scale(14.5),
+    color: "#ef4444",
+    fontWeight: "600",
   },
 });
 

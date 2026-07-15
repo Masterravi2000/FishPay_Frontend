@@ -162,7 +162,7 @@ const PaymentStatusScreen = () => {
     <View
       style={[
         styles.paymentStatusPageView,
-        { backgroundColor: isSucess ? "#4ec92f" : "orange" },
+        { backgroundColor: isSucess ? "#70d657" : "orange" },
       ]}
     >
       <View style={styles.bodyComponentsView}>
@@ -180,7 +180,7 @@ const PaymentStatusScreen = () => {
               style={{ width: 150, height: 150 }}
             />
           ) : (
-            <View style={{ paddingVertical: 50, transform: [{ scale: 2.5 }] }}>
+            <View style={{ paddingVertical: 55, transform: [{ scale: 3 }] }}>
               <ActivityIndicator size="large" color="white" />
             </View>
           )}
@@ -307,7 +307,7 @@ const PaymentStatusScreen = () => {
       >
         <TouchableOpacity
           onPress={() => navigation.navigate("OrderTrack")}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
           style={styles.skipForNowButton}
         >
           <TextScallingFalse style={styles.skipForNowText}>
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   invoiceCutsMiddle: {
     width: 10,
     height: 17,
-    backgroundColor: "#4ec92f",
+    backgroundColor: "#70d657",
   },
   invoiceCutsLine: {
     width: "88%",
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     color: "#383838",
   },
   invoiceBottomDots: {
-    backgroundColor: "#4ec92f",
+    backgroundColor: "#70d657",
     width: 15,
     height: 7,
     borderTopLeftRadius: 50,
@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   },
   bottomMarkContainer: {
     flexDirection: "row",
-    paddingTop: 14,
+    paddingTop: 20,
     alignItems: "center",
     justifyContent: "center",
     gap: 5,
@@ -467,15 +467,15 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   skipForNowButton: {
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
     paddingVertical: 5,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "white",
     borderRadius: 50,
   },
   skipForNowText: {
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "700",
     color: "white",
   },
 });

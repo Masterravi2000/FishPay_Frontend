@@ -165,7 +165,7 @@ const InvoiceHistory = () => {
 
       {group.invoices.map((invoice, index) => (
         <TouchableOpacity
-          activeOpacity={0.8}
+          activeOpacity={0.7}
           onPress={() => handleDownload(invoice)}
           key={index}
           style={[
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#a9e098",
     borderRadius: scale(10),
-    padding: scale(12),
+    padding: scale(15),
   },
   statLabel: {
     fontSize: scale(12),
