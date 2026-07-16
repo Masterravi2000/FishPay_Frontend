@@ -20,9 +20,9 @@ This application demonstrates the complete FishPay customer payment lifecycle, i
 <br />
 
 <p align="center">
-  <img src="assets/Extra_Images/payment-status.jpeg" width="180" style="margin-right: 15px;" />
-  <img src="assets/Extra_Images/razorpay-payment.jpeg" width="180" style="margin-right: 15px;" />
-  <img src="assets/Extra_Images/payment-success.jpeg" width="180" style="margin-right: 15px;" />
+  <img src="assets/Extra_Images/payment-status.jpeg" width="180" />&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="assets/Extra_Images/razorpay-payment.jpeg" width="180" />&nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="assets/Extra_Images/payment-success.jpeg" width="180" />&nbsp;&nbsp;&nbsp;&nbsp;
   <img src="assets/Extra_Images/invoice-history.jpeg" width="180" />
 </p>
 
