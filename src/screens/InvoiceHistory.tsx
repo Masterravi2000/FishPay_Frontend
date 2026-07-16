@@ -123,6 +123,7 @@ const InvoiceHistory = () => {
   const { invoices, totalAmountSpent, totalInvoice, loadingMore } = useSelector(
     (state: RootState) => state.invoices,
   );
+  console.log("invoice url - ", invoices)
 
   const hasMore = invoices.length < totalInvoice;
 
