@@ -14,16 +14,16 @@ Unlike the backend—which is the actual reusable payment infrastructure—this 
 
 **Product Selection & Payment Flow**
 
-Users can browse products, place orders, initiate secure payments through Razorpay Checkout, and receive immediate payment confirmation after backend verification.
+This application demonstrates the complete FishPay customer payment lifecycle, including secure payment processing, payment verification, transaction status, asynchronous invoice generation, invoice history, PDF downloads, and refund management. It serves as a demonstration client for merchants evaluating FishPay before integrating its backend into their own applications.
 
 <br />
 <br />
 
 <p align="center">
-  <img src="assets/Extra_Images/payment-status.jpeg" width="240" style="margin-right: 12px;" />
-  <img src="assets/Extra_Images/razorpay_payment.jpeg" width="240" style="margin-right: 12px;" />
-  <img src="assets/Extra_Images/payment-success.jpeg" width="240" style="margin-right: 12px;" />
-  <img src="assets/Extra_Images/invoice-history.jpeg" width="240" />
+  <img src="assets/Extra_Images/payment-status.jpeg" width="180" style="margin-right: 12px;" />
+  <img src="assets/Extra_Images/razorpay_payment.jpeg" width="180" style="margin-right: 12px;" />
+  <img src="assets/Extra_Images/payment-success.jpeg" width="180" style="margin-right: 12px;" />
+  <img src="assets/Extra_Images/invoice-history.jpeg" width="180" />
 </p>
 
 ---
